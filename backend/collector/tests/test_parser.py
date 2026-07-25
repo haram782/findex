@@ -43,6 +43,40 @@ def test_fraction_pagination_text_exposes_total_page_count():
     assert page.total_pages == 12
 
 
+def test_real_mobile_paginate_markup_exposes_total_page_count():
+    html = (FIXTURE_DIR / "mobile_empty.html").read_text().replace(
+        "</body>",
+        """
+        <div class="paginate">
+          <a onclick="fnList(' 1', 'P', '18');">이전 20개</a>
+          <span>1/18</span>
+          <a onclick="fnList(' 1', 'N', '18');">다음 20개</a>
+        </div>
+        </body>
+        """,
+    )
+
+    page = parse_price_page(html)
+
+    assert page.total_pages == 18
+
+
+def test_fn_list_last_page_argument_works_without_fraction_text():
+    html = (FIXTURE_DIR / "mobile_empty.html").read_text().replace(
+        "</body>",
+        """
+        <div class="paginate">
+          <a onclick="fnList(' 1', 'N', '18');">다음 20개</a>
+        </div>
+        </body>
+        """,
+    )
+
+    page = parse_price_page(html)
+
+    assert page.total_pages == 18
+
+
 def test_missing_expected_table_raises_parse_error():
     with pytest.raises(PriceTableParseError):
         parse_price_page("<html><table><tr><th>다른 열</th></tr></table></html>")

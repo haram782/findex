@@ -108,7 +108,7 @@ def _parse_total_pages(soup: BeautifulSoup) -> int:
             value = str(field.get("value", ""))
             if value.isdigit():
                 pages.add(int(value))
-    for anchor in soup.select(".pagination a, .paging a"):
+    for anchor in soup.select(".pagination a, .paging a, .paginate a"):
         source = " ".join(
             [
                 str(anchor.get("href", "")),
@@ -118,10 +118,15 @@ def _parse_total_pages(soup: BeautifulSoup) -> int:
         )
         for value in re.findall(r"(?:pageIndex=|\()(\d+)", source):
             pages.add(int(value))
+        for value in re.findall(
+            r"fnList\([^)]*,\s*['\"](\d+)['\"]\s*\)",
+            source,
+        ):
+            pages.add(int(value))
         text = anchor.get_text(strip=True)
         if text.isdigit():
             pages.add(int(text))
-    for container in soup.select(".pagination, .paging"):
+    for container in soup.select(".pagination, .paging, .paginate"):
         for _, total in re.findall(
             r"(\d+)\s*/\s*(\d+)",
             container.get_text(" ", strip=True),
