@@ -5,11 +5,12 @@ export interface DateWindow {
   endDate: string;
 }
 
-const RANGE_DAYS: Partial<Record<DateRange, number>> = {
+const RANGE_DAYS: Record<DateRange, number> = {
+  day: 1,
   week: 7,
-  twentyDays: 20,
+  month: 30,
   quarter: 90,
-  year: 365
+  halfYear: 180
 };
 
 const KST_FORMATTER = new Intl.DateTimeFormat("en-CA", {
@@ -32,12 +33,9 @@ export function getDateWindow(
   today: Date = new Date()
 ): DateWindow {
   const endDate = formatKstDate(today);
-  if (range === "all") {
-    return { startDate: "2000-01-01", endDate };
-  }
   const startDate = shiftIsoDate(
     endDate,
-    -((RANGE_DAYS[range] ?? 1) - 1)
+    -(RANGE_DAYS[range] - 1)
   );
   return { startDate, endDate };
 }

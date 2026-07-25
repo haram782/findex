@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { aggregateTimeSeries } from "./chartInterval";
 import { MarketCharts } from "./components/MarketCharts";
 import { MarketOverview } from "./components/MarketOverview";
 import { SpeciesSidebar } from "./components/SpeciesSidebar";
@@ -8,7 +7,6 @@ import { useDashboard } from "./hooks/useDashboard";
 import { useFavorites, useTheme } from "./hooks/usePreferences";
 import { getSpeciesAliases } from "./speciesKnowledge";
 import type {
-  ChartInterval,
   DateRange,
   GroupBy,
   MarketTab,
@@ -22,16 +20,11 @@ const GROUP_OPTIONS: { value: GroupBy; label: string }[] = [
   { value: "spec", label: "규격별" }
 ];
 const RANGE_OPTIONS: { value: DateRange; label: string }[] = [
+  { value: "day", label: "1일" },
   { value: "week", label: "1주" },
-  { value: "twentyDays", label: "20일" },
+  { value: "month", label: "1개월" },
   { value: "quarter", label: "3개월" },
-  { value: "year", label: "1년" },
-  { value: "all", label: "전체" }
-];
-const INTERVAL_OPTIONS: { value: ChartInterval; label: string }[] = [
-  { value: "daily", label: "일봉" },
-  { value: "weekly", label: "주봉" },
-  { value: "twentyDay", label: "20일봉" }
+  { value: "halfYear", label: "6개월" }
 ];
 const MAX_SELECTIONS = 5;
 
@@ -39,9 +32,7 @@ export default function App() {
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   const [groupBy, setGroupBy] = useState<GroupBy>("none");
   const [volumeMetric, setVolumeMetric] = useState<VolumeMetric>("quantity");
-  const [dateRange, setDateRange] = useState<DateRange>("twentyDays");
-  const [chartInterval, setChartInterval] =
-    useState<ChartInterval>("daily");
+  const [dateRange, setDateRange] = useState<DateRange>("quarter");
   const [activeTab, setActiveTab] = useState<MarketTab>("market");
   const { favoriteKeys, toggleFavorite } = useFavorites();
   const { theme, setTheme } = useTheme();
@@ -58,10 +49,6 @@ export default function App() {
         .map((key) => snapshots.find((item) => item.key === key))
         .filter((item) => item !== undefined),
     [selectedKeys, snapshots]
-  );
-  const chartPoints = useMemo(
-    () => aggregateTimeSeries(points, chartInterval),
-    [chartInterval, points]
   );
   const currentPrices = useMemo(
     () =>
@@ -140,20 +127,6 @@ export default function App() {
                     </button>
                   ))}
                 </div>
-                <div className="segmented" aria-label="차트 집계 단위">
-                  {INTERVAL_OPTIONS.map((option) => (
-                    <button
-                      className={
-                        chartInterval === option.value ? "active" : ""
-                      }
-                      key={option.value}
-                      aria-pressed={chartInterval === option.value}
-                      onClick={() => setChartInterval(option.value)}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
                 <div className="segmented" aria-label="분리 기준">
                   {GROUP_OPTIONS.map((option) => (
                     <button
@@ -197,17 +170,17 @@ export default function App() {
               {!loading &&
                 !error &&
                 selectedKeys.size > 0 &&
-                chartPoints.length === 0 && (
+                points.length === 0 && (
                   <div className="notice">
                     선택한 기간의 거래 데이터가 없습니다.
                   </div>
                 )}
               <MarketCharts
-                points={chartPoints}
+                points={points}
                 volumeMetric={volumeMetric}
                 theme={theme}
                 currentPrices={currentPrices}
-                chartInterval={chartInterval}
+                chartInterval="daily"
               />
             </div>
           )}

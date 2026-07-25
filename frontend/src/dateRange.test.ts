@@ -5,19 +5,24 @@ describe("차트 조회 기간", () => {
   const today = new Date(2026, 6, 26);
 
   it("기간의 시작일과 종료일을 포함해 계산한다", () => {
+    expect(getDateWindow("day", today)).toEqual({
+      startDate: "2026-07-26",
+      endDate: "2026-07-26"
+    });
     expect(getDateWindow("week", today)).toEqual({
       startDate: "2026-07-20",
       endDate: "2026-07-26"
     });
-    expect(getDateWindow("twentyDays", today)).toEqual({
-      startDate: "2026-07-07",
+    expect(getDateWindow("month", today)).toEqual({
+      startDate: "2026-06-27",
       endDate: "2026-07-26"
     });
-  });
-
-  it("전체 기간은 수집원이 제공하는 과거 범위를 요청한다", () => {
-    expect(getDateWindow("all", today)).toEqual({
-      startDate: "2000-01-01",
+    expect(getDateWindow("quarter", today)).toEqual({
+      startDate: "2026-04-28",
+      endDate: "2026-07-26"
+    });
+    expect(getDateWindow("halfYear", today)).toEqual({
+      startDate: "2026-01-28",
       endDate: "2026-07-26"
     });
   });
