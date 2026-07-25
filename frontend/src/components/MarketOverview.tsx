@@ -2,6 +2,7 @@ import {
   formatSelectionTitle,
   summarizeSelection
 } from "../marketView";
+import { formatPriceWithUnit } from "../priceUnit";
 import type { MarketTab, SpeciesSnapshot } from "../types";
 
 interface MarketOverviewProps {
@@ -15,11 +16,6 @@ const TABS: { value: MarketTab; label: string }[] = [
   { value: "profile", label: "어종 정보" },
   { value: "news", label: "시장 소식" }
 ];
-
-const formatPrice = (value: number | null | undefined): string =>
-  value === null || value === undefined
-    ? "-"
-    : `${Math.round(value).toLocaleString("ko-KR")}원`;
 
 export function MarketOverview({
   items,
@@ -55,7 +51,11 @@ export function MarketOverview({
           )}
         </div>
         <div className="selection-price">
-          <strong>{formatPrice(summary.priceAvg)}</strong>
+          <strong>
+            {summary.priceUnit === "혼합"
+              ? "단위 혼합"
+              : formatPriceWithUnit(summary.priceAvg, summary.priceUnit)}
+          </strong>
           <span className={rateClass}>
             {changeRate === null || changeRate === undefined
               ? "-"

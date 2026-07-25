@@ -1,4 +1,5 @@
 import type { SpeciesSnapshot } from "./types";
+import { combinePriceUnits } from "./priceUnit";
 
 export function formatSelectionTitle(speciesNames: string[]): string {
   const uniqueNames = [...new Set(speciesNames)];
@@ -24,9 +25,15 @@ const averageAvailable = (
 export function summarizeSelection(items: SpeciesSnapshot[]): {
   priceAvg: number | null;
   changeRate: number | null;
+  priceUnit: string;
 } {
+  const priceUnit = combinePriceUnits(items.map((item) => item.priceUnit));
   return {
-    priceAvg: averageAvailable(items, (item) => item.priceAvg),
-    changeRate: averageAvailable(items, (item) => item.changeRate)
+    priceAvg:
+      priceUnit === "혼합"
+        ? null
+        : averageAvailable(items, (item) => item.priceAvg),
+    changeRate: averageAvailable(items, (item) => item.changeRate),
+    priceUnit
   };
 }

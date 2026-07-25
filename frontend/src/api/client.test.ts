@@ -15,6 +15,7 @@ describe("대시보드 API 클라이언트", () => {
               date: "2026-07-25",
               species: "광어",
               status: "활",
+              price_unit: "kg",
               group: "제주",
               price_avg: 19000,
               price_high: 23000,
@@ -29,7 +30,7 @@ describe("대시보드 API 클라이언트", () => {
     );
 
     const result = await dashboardApi.getTimeSeries(
-      [{ species: "광어", status: "활" }],
+      [{ species: "광어", status: "활", priceUnit: "kg" }],
       "origin",
       new AbortController().signal,
       "2026-07-01",
@@ -39,11 +40,13 @@ describe("대시보드 API 클라이언트", () => {
     const requestedUrl = String(fetchMock.mock.calls[0][0]);
     expect(requestedUrl).toContain("species=%EA%B4%91%EC%96%B4");
     expect(requestedUrl).toContain("status=%ED%99%9C");
+    expect(requestedUrl).toContain("price_unit=kg");
     expect(requestedUrl).toContain("group_by=origin");
     expect(requestedUrl).toContain("start_date=2026-07-01");
     expect(requestedUrl).toContain("end_date=2026-07-25");
     expect(result[0]).toMatchObject({
       priceAvg: 19000,
+      priceUnit: "kg",
       tradeAmount: 190000
     });
   });
@@ -67,6 +70,7 @@ describe("대시보드 API 클라이언트", () => {
               species: "광어",
               status: "활",
               category: "fish",
+              price_unit: "kg",
               price_avg: 19000,
               change_rate: -2.4,
               trade_value: 190000
@@ -83,9 +87,67 @@ describe("대시보드 API 클라이언트", () => {
 
     expect(result[0]).toMatchObject({
       species: "광어",
+      key: "광어::활::kg",
+      priceUnit: "kg",
       priceAvg: 19000,
       changeRate: -2.4,
       tradeAmount: 190000
     });
+  });
+
+  it("빈 가격 단위를 미상으로 정규화하고 snapshot key에 포함한다", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          results: [
+            {
+              species: "광어",
+              status: "활",
+              category: "fish",
+              price_unit: " "
+            }
+          ]
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      )
+    );
+
+    const result = await dashboardApi.getSnapshots(
+      new AbortController().signal
+    );
+
+    expect(result[0]).toMatchObject({
+      key: "광어::활::",
+      priceUnit: ""
+    });
+  });
+
+  it("같은 어종·상태의 복수 가격 단위를 선택 순서대로 전달한다", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ results: [] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      })
+    );
+
+    await dashboardApi.getTimeSeries(
+      [
+        { species: "광어", status: "활", priceUnit: "kg" },
+        { species: "광어", status: "활", priceUnit: "box" }
+      ],
+      "none",
+      new AbortController().signal
+    );
+
+    const requestedUrl = new URL(String(fetchMock.mock.calls[0][0]), "http://localhost");
+    expect(requestedUrl.searchParams.getAll("species")).toEqual([
+      "광어",
+      "광어"
+    ]);
+    expect(requestedUrl.searchParams.getAll("status")).toEqual(["활", "활"]);
+    expect(requestedUrl.searchParams.getAll("price_unit")).toEqual([
+      "kg",
+      "box"
+    ]);
   });
 });

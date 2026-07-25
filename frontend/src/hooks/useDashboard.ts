@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { dashboardApi } from "../api/client";
+import { parseSelectionKey } from "../selectionKey";
 import type {
   CatalogItem,
   GroupBy,
@@ -57,11 +58,7 @@ export function useDashboard(
   }, []);
 
   const selections = useMemo(
-    () =>
-      [...selectedKeys].map((key) => {
-        const [species, status] = key.split("::");
-        return { species, status };
-      }),
+    () => [...selectedKeys].map(parseSelectionKey).filter((item) => item !== null),
     [selectedKeys]
   );
 

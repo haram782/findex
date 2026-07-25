@@ -53,6 +53,7 @@ const points: TimeSeriesPoint[] = [
     status: "선",
     date: "2026-07-26",
     group: null,
+    priceUnit: "kg",
     priceAvg: 23000,
     priceHigh: 25000,
     priceLow: 22000,
@@ -86,7 +87,7 @@ describe("시장 차트 확대와 이동", () => {
       max: 10,
       minRange: 2
     });
-    expect(options.layout?.padding).toMatchObject({ right: 72 });
+    expect(options.layout?.padding).toMatchObject({ right: 104 });
     expect(options.animation).toBe(false);
     expect(options.scales?.price).toMatchObject({
       axis: "y",
@@ -113,6 +114,36 @@ describe("시장 차트 확대와 이동", () => {
     expect(getDateTickLabel(2, labels)).toBe("");
   });
 
+  it("가격 tooltip에는 가격 단위를 표시하고 거래량 tooltip은 기존 값을 유지한다", () => {
+    const options = createMarketChartOptions("dark", 1, 1);
+    const label = options.plugins?.tooltip?.callbacks?.label;
+    if (typeof label !== "function") {
+      throw new Error("tooltip label callback이 없습니다");
+    }
+
+    const priceLabel = label.call({} as never, {
+      dataset: {
+        label: "선 금태 · kg · 평균가",
+        yAxisID: "price"
+      },
+      parsed: { y: 13686 },
+      raw: { x: 0, y: 13686, priceUnit: "kg" },
+      formattedValue: "13,686"
+    } as never);
+    const volumeLabel = label.call({} as never, {
+      dataset: {
+        label: "선 금태 · kg · 수량",
+        yAxisID: "volume"
+      },
+      parsed: { y: 10 },
+      raw: { x: 0, y: 10, priceUnit: null },
+      formattedValue: "10"
+    } as never);
+
+    expect(priceLabel).toBe("선 금태 · kg · 평균가: 13,686원/kg");
+    expect(volumeLabel).toBe("선 금태 · kg · 수량: 10");
+  });
+
   it("단일 통합 차트에 정렬된 확대·축소 버튼만 표시한다", async () => {
     const user = userEvent.setup();
     render(
@@ -124,6 +155,7 @@ describe("시장 차트 확대와 이동", () => {
           {
             species: "금태",
             status: "선",
+            priceUnit: "kg",
             price: 23000
           }
         ]}
@@ -160,8 +192,8 @@ describe("시장 차트 확대와 이동", () => {
         volumeMetric="tradeAmount"
         theme="light"
         currentPrices={[
-          { species: "금태", status: "선", price: 23000 },
-          { species: "양태", status: "선", price: 5000 }
+          { species: "금태", status: "선", priceUnit: "kg", price: 23000 },
+          { species: "양태", status: "선", priceUnit: "kg", price: 5000 }
         ]}
         chartInterval="day"
       />
@@ -179,7 +211,7 @@ describe("시장 차트 확대와 이동", () => {
         volumeMetric="tradeAmount"
         theme="dark"
         currentPrices={[
-          { species: "금태", status: "선", price: 23000 }
+          { species: "금태", status: "선", priceUnit: "kg", price: 23000 }
         ]}
         chartInterval="day"
       />
@@ -191,7 +223,7 @@ describe("시장 차트 확대와 이동", () => {
         volumeMetric="tradeAmount"
         theme="light"
         currentPrices={[
-          { species: "금태", status: "선", price: 24000 }
+          { species: "금태", status: "선", priceUnit: "kg", price: 24000 }
         ]}
         chartInterval="day"
       />

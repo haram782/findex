@@ -28,10 +28,11 @@ describe("선택 어종 요약값", () => {
     priceAvg: number | null,
     changeRate: number | null
   ): SpeciesSnapshot => ({
-    key: `${species}::활`,
+    key: `${species}::활::kg`,
     species,
     status: "활",
     category: "어류",
+    priceUnit: "kg",
     priceAvg,
     changeRate,
     tradeAmount: 0
@@ -46,7 +47,8 @@ describe("선택 어종 요약값", () => {
       ])
     ).toEqual({
       priceAvg: 15333.333333333334,
-      changeRate: -0.3333333333333333
+      changeRate: -0.3333333333333333,
+      priceUnit: "kg"
     });
   });
 
@@ -56,9 +58,22 @@ describe("선택 어종 요약값", () => {
         snapshot("금태", 23000, null),
         snapshot("양태", null, null)
       ])
-    ).toEqual({ priceAvg: 23000, changeRate: null });
+    ).toEqual({ priceAvg: 23000, changeRate: null, priceUnit: "kg" });
     expect(
       summarizeSelection([snapshot("양태", null, null)])
-    ).toEqual({ priceAvg: null, changeRate: null });
+    ).toEqual({ priceAvg: null, changeRate: null, priceUnit: "kg" });
+  });
+
+  it("가격 단위가 다르면 의미 없는 평균가를 만들지 않고 혼합 단위를 반환한다", () => {
+    expect(
+      summarizeSelection([
+        snapshot("금태", 23000, -4.2),
+        { ...snapshot("양태", 5000, 1.2), priceUnit: "box" }
+      ])
+    ).toEqual({
+      priceAvg: null,
+      changeRate: -1.5,
+      priceUnit: "혼합"
+    });
   });
 });

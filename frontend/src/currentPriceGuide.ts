@@ -1,16 +1,38 @@
 import type { ChartType, Plugin } from "chart.js";
+import { formatPriceWithUnit } from "./priceUnit";
 
 const BADGE_HEIGHT = 22;
 const BADGE_GAP = 3;
+const MAX_BADGE_WIDTH = 160;
+
+const fitBadgeLabel = (
+  ctx: CanvasRenderingContext2D,
+  value: string,
+  maximumWidth: number
+): string => {
+  if (ctx.measureText(value).width <= maximumWidth) {
+    return value;
+  }
+  let shortened = value;
+  while (
+    shortened.length > 1 &&
+    ctx.measureText(`${shortened}…`).width > maximumWidth
+  ) {
+    shortened = shortened.slice(0, -1);
+  }
+  return `${shortened}…`;
+};
 
 export interface CurrentPriceSource {
   species: string;
   status: string;
+  priceUnit: string;
   price: number | null;
 }
 
 export interface CurrentPriceGuide {
   price: number;
+  priceUnit: string;
   color: string;
 }
 
@@ -18,6 +40,7 @@ interface PriceDataset {
   type?: string;
   label?: string;
   borderColor?: unknown;
+  priceUnit?: string;
 }
 
 export const buildCurrentPriceGuides = (
@@ -30,15 +53,24 @@ export const buildCurrentPriceGuides = (
     }
 
     const labelPrefix = `${source.status} ${source.species} ·`;
-    const dataset = datasets.find(
+    const matchingDatasets = datasets.filter(
       (candidate) =>
         candidate.type === "line" &&
         candidate.label?.startsWith(labelPrefix) &&
+        candidate.priceUnit === source.priceUnit &&
         candidate.label.endsWith("· 평균가") &&
         typeof candidate.borderColor === "string"
     );
+    const dataset =
+      matchingDatasets.length === 1 ? matchingDatasets[0] : undefined;
     return dataset && typeof dataset.borderColor === "string"
-      ? [{ price: source.price, color: dataset.borderColor }]
+      ? [
+          {
+            price: source.price,
+            priceUnit: source.priceUnit,
+            color: dataset.borderColor
+          }
+        ]
       : [];
   });
 
@@ -121,8 +153,15 @@ export const createCurrentPriceGuide = (
     );
 
     visible.forEach(({ guide, lineY }, index) => {
-      const label = Math.round(guide.price).toLocaleString("ko-KR");
-      const badgeWidth = Math.max(58, ctx.measureText(label).width + 16);
+      const label = fitBadgeLabel(
+        ctx,
+        formatPriceWithUnit(guide.price, guide.priceUnit),
+        MAX_BADGE_WIDTH - 16
+      );
+      const badgeWidth = Math.min(
+        MAX_BADGE_WIDTH,
+        Math.max(58, ctx.measureText(label).width + 16)
+      );
       const badgeX = Math.min(
         chartArea.right + 4,
         chart.width - badgeWidth - 2

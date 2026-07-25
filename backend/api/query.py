@@ -18,7 +18,7 @@ class ApiQueryError:
 
 @dataclass(frozen=True)
 class SelectionQuery:
-    selections: tuple[tuple[str, str | None], ...]
+    selections: tuple[tuple[str, str | None, str | None], ...]
     group_by: str
     start_date: date
     end_date: date
@@ -61,6 +61,7 @@ def parse_selection_query(
 ) -> Result[SelectionQuery, ApiQueryError]:
     species = tuple(value.strip() for value in params.getlist("species") if value.strip())
     statuses = tuple(value.strip() for value in params.getlist("status"))
+    price_units = tuple(value.strip() for value in params.getlist("price_unit"))
     if require_species and not species:
         return Result.err(
             ApiQueryError("species_required", "species를 하나 이상 지정해야 합니다.")
@@ -79,8 +80,19 @@ def parse_selection_query(
                 "species와 status는 같은 개수의 선택 쌍이어야 합니다.",
             )
         )
+    if price_units and len(price_units) != len(species):
+        return Result.err(
+            ApiQueryError(
+                "invalid_selection",
+                "species와 price_unit은 같은 개수의 선택 쌍이어야 합니다.",
+            )
+        )
     selections = tuple(
-        (name, statuses[index] if statuses else None)
+        (
+            name,
+            statuses[index] if statuses else None,
+            price_units[index] if price_units else None,
+        )
         for index, name in enumerate(species)
     )
     group_by = params.get("group_by", "none")

@@ -35,7 +35,6 @@ export default function App() {
   const [volumeMetric, setVolumeMetric] = useState<VolumeMetric>("quantity");
   const [chartInterval, setChartInterval] = useState<ChartInterval>("day");
   const [activeTab, setActiveTab] = useState<MarketTab>("market");
-  const { favoriteKeys, toggleFavorite } = useFavorites();
   const { theme, setTheme } = useTheme();
   const { snapshots, points, loading, error } = useDashboard(
     selectedKeys,
@@ -43,6 +42,7 @@ export default function App() {
     HISTORY_START_DATE,
     undefined
   );
+  const { favoriteKeys, toggleFavorite } = useFavorites(snapshots);
   const selectedItems = useMemo(
     () =>
       [...selectedKeys]
@@ -59,6 +59,7 @@ export default function App() {
       selectedItems.map((item) => ({
         species: item.species,
         status: item.status,
+        priceUnit: item.priceUnit,
         price: item.priceAvg
       })),
     [selectedItems]

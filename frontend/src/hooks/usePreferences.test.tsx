@@ -19,6 +19,23 @@ describe("사용자 화면 설정", () => {
     expect(restored.result.current.favoriteKeys.has("금태::선")).toBe(true);
   });
 
+  it("기존 어종·상태 즐겨찾기를 현재 가격 단위별 key로 마이그레이션한다", () => {
+    localStorage.setItem("findex-favorites", JSON.stringify(["금태::선"]));
+    const candidates = [
+      { key: "금태::선::kg", species: "금태", status: "선" },
+      { key: "금태::선::box", species: "금태", status: "선" }
+    ];
+
+    const { result } = renderHook(() => useFavorites(candidates));
+
+    expect([...result.current.favoriteKeys].sort()).toEqual([
+      "금태::선::box",
+      "금태::선::kg"
+    ]);
+    expect(JSON.parse(localStorage.getItem("findex-favorites") ?? "[]").sort())
+      .toEqual(["금태::선::box", "금태::선::kg"]);
+  });
+
   it("테마를 전환하고 브라우저 저장소에 보존한다", () => {
     const { result } = renderHook(() => useTheme());
 

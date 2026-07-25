@@ -10,10 +10,11 @@ const item = (
   tradeAmount: number,
   changeRate: number | null
 ): SpeciesSnapshot => ({
-  key: `${species}::활`,
+  key: `${species}::활::kg`,
   species,
   status: "활",
   category: "어류",
+  priceUnit: "kg",
   priceAvg: tradeAmount / 10,
   changeRate,
   tradeAmount

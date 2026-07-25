@@ -10,7 +10,7 @@ interface Aggregate {
 }
 
 const seriesKey = (point: TimeSeriesPoint): string =>
-  `${point.species}::${point.status}::${point.group ?? ""}`;
+  `${point.species}::${point.status}::${point.priceUnit}::${point.group ?? ""}`;
 
 const mondayOf = (date: string): string => {
   const value = new Date(`${date}T00:00:00Z`);

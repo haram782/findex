@@ -9,12 +9,17 @@ export interface SpeciesSelection {
   status: string;
 }
 
+export interface PriceSelection extends SpeciesSelection {
+  priceUnit: string;
+}
+
 export interface CatalogItem extends SpeciesSelection {
   category: string;
 }
 
 export interface SpeciesSnapshot extends CatalogItem {
   key: string;
+  priceUnit: string;
   priceAvg: number | null;
   changeRate: number | null;
   tradeAmount: number;
@@ -23,6 +28,7 @@ export interface SpeciesSnapshot extends CatalogItem {
 export interface TimeSeriesPoint extends SpeciesSelection {
   date: string;
   group: string | null;
+  priceUnit: string;
   priceAvg: number | null;
   priceHigh: number;
   priceLow: number;

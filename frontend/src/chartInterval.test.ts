@@ -10,6 +10,7 @@ const point = (
   species: "금태",
   status: "선",
   group: null,
+  priceUnit: "kg",
   priceAvg: 100,
   priceHigh: 120,
   priceLow: 80,
@@ -109,5 +110,21 @@ describe("시계열 봉 집계", () => {
     );
 
     expect(result).toHaveLength(3);
+  });
+
+  it("서로 다른 가격 단위는 같은 봉에서 섞지 않고 단위를 보존한다", () => {
+    const result = aggregateTimeSeries(
+      [
+        point("2026-07-20", { priceUnit: "kg" }),
+        point("2026-07-20", { priceUnit: "box" })
+      ],
+      "week"
+    );
+
+    expect(result).toHaveLength(2);
+    expect(result.map(({ priceUnit }) => priceUnit).sort()).toEqual([
+      "box",
+      "kg"
+    ]);
   });
 });

@@ -6,10 +6,11 @@ import {
 import type { SpeciesSnapshot } from "./types";
 
 const item: SpeciesSnapshot = {
-  key: "흑점줄전갱이::선",
+  key: "흑점줄전갱이::선::kg",
   species: "흑점줄전갱이",
   status: "선",
   category: "어류",
+  priceUnit: "kg",
   priceAvg: 42000,
   changeRate: 1.5,
   tradeAmount: 800000

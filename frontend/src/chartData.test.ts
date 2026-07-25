@@ -13,6 +13,7 @@ const points: TimeSeriesPoint[] = [
     species: "광어",
     status: "활",
     group: "제주",
+    priceUnit: "kg",
     priceAvg: 18000,
     priceHigh: 22000,
     priceLow: 15000,
@@ -24,6 +25,7 @@ const points: TimeSeriesPoint[] = [
     species: "광어",
     status: "활",
     group: "제주",
+    priceUnit: "kg",
     priceAvg: 19000,
     priceHigh: 23000,
     priceLow: 16000,
@@ -35,6 +37,7 @@ const points: TimeSeriesPoint[] = [
     species: "우럭",
     status: "선",
     group: null,
+    priceUnit: "box",
     priceAvg: 9000,
     priceHigh: 12000,
     priceLow: 7000,
@@ -50,11 +53,11 @@ describe("차트 데이터 변환", () => {
     expect(chart.labels).toEqual(["2026-07-24", "2026-07-25"]);
     expect(chart.datasets).toHaveLength(6);
     expect(chart.datasets[0]).toMatchObject({
-      label: "활 광어 · 제주 · 평균가",
+      label: "활 광어 · 제주 · kg · 평균가",
       data: [18000, 19000]
     });
     expect(chart.datasets[3]).toMatchObject({
-      label: "선 우럭 · 평균가",
+      label: "선 우럭 · box · 평균가",
       data: [null, 9000]
     });
   });
@@ -73,14 +76,14 @@ describe("차트 데이터 변환", () => {
 
     expect(quantity.datasets).toHaveLength(2);
     expect(quantity.datasets[0]).toMatchObject({
-      label: "활 광어 · 제주 · 수량",
+      label: "활 광어 · 제주 · kg · 수량",
       data: [12, 10]
     });
     expect(amount.datasets[0]).toMatchObject({
-      label: "활 광어 · 제주 · 거래대금",
+      label: "활 광어 · 제주 · kg · 거래대금",
       data: [216000, 190000]
     });
-    expect(getSeriesKey(points[0])).toBe("광어::활::제주");
+    expect(getSeriesKey(points[0])).toBe("광어::활::kg::제주");
   });
 
   it("가격선과 거래량 막대를 동일한 날짜 축 데이터로 통합한다", () => {
@@ -91,16 +94,20 @@ describe("차트 데이터 변환", () => {
     expect(chart.datasets[0]).toMatchObject({
       type: "line",
       yAxisID: "price",
-      label: "활 광어 · 제주 · 평균가"
+      label: "활 광어 · 제주 · kg · 평균가",
+      data: [
+        { x: 0, y: 18000, priceUnit: "kg" },
+        { x: 1, y: 19000, priceUnit: "kg" }
+      ]
     });
     expect(chart.datasets[6]).toMatchObject({
       type: "bar",
       yAxisID: "volume",
-      label: "활 광어 · 제주 · 수량",
+      label: "활 광어 · 제주 · kg · 수량",
       maxBarThickness: 10,
       data: [
-        { x: 0, y: 12 },
-        { x: 1, y: 10 }
+        { x: 0, y: 12, priceUnit: null },
+        { x: 1, y: 10, priceUnit: null }
       ]
     });
   });
@@ -117,20 +124,20 @@ describe("차트 데이터 변환", () => {
       "2026-07-27"
     ]);
     expect(chart.datasets[0].data).toEqual([
-      { x: 0, y: null },
-      { x: 1, y: null },
-      { x: 2, y: 18000 },
-      { x: 3, y: 19000 },
-      { x: 4, y: null },
-      { x: 5, y: null }
+      { x: 0, y: null, priceUnit: "kg" },
+      { x: 1, y: null, priceUnit: "kg" },
+      { x: 2, y: 18000, priceUnit: "kg" },
+      { x: 3, y: 19000, priceUnit: "kg" },
+      { x: 4, y: null, priceUnit: "kg" },
+      { x: 5, y: null, priceUnit: "kg" }
     ]);
     expect(chart.datasets[6].data).toEqual([
-      { x: 0, y: 0 },
-      { x: 1, y: 0 },
-      { x: 2, y: 12 },
-      { x: 3, y: 10 },
-      { x: 4, y: 0 },
-      { x: 5, y: 0 }
+      { x: 0, y: 0, priceUnit: null },
+      { x: 1, y: 0, priceUnit: null },
+      { x: 2, y: 12, priceUnit: null },
+      { x: 3, y: 10, priceUnit: null },
+      { x: 4, y: 0, priceUnit: null },
+      { x: 5, y: 0, priceUnit: null }
     ]);
   });
 
@@ -193,5 +200,20 @@ describe("차트 데이터 변환", () => {
       labels: [],
       datasets: []
     });
+  });
+
+  it("같은 어종·상태·그룹이라도 가격 단위가 다르면 별도 dataset을 만든다", () => {
+    const chart = buildPriceChartData([
+      points[0],
+      { ...points[0], priceUnit: "box", priceAvg: 30000 }
+    ]);
+
+    expect(chart.datasets).toHaveLength(6);
+    expect(chart.datasets.map(({ label }) => label)).toEqual(
+      expect.arrayContaining([
+        "활 광어 · 제주 · kg · 평균가",
+        "활 광어 · 제주 · box · 평균가"
+      ])
+    );
   });
 });

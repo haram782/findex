@@ -1,9 +1,10 @@
-import type { ChartData } from "chart.js";
+import type { ChartData, ChartDataset } from "chart.js";
 import type {
   ChartInterval,
   TimeSeriesPoint,
   VolumeMetric
 } from "./types";
+import { normalizePriceUnit } from "./priceUnit";
 
 const COLORS = ["#2388ff", "#ff5874", "#2ecb81", "#f3a530", "#9b72f2"];
 
@@ -37,13 +38,21 @@ const shiftInterval: Record<
 export interface MarketChartPoint {
   x: number;
   y: number | null;
+  priceUnit: string | null;
 }
 
 export const getSeriesKey = (point: TimeSeriesPoint): string =>
-  `${point.species}::${point.status}::${point.group ?? ""}`;
+  `${point.species}::${point.status}::${point.priceUnit}::${point.group ?? ""}`;
 
 const getSeriesLabel = (point: TimeSeriesPoint): string =>
-  `${point.status} ${point.species}${point.group ? ` · ${point.group}` : ""}`;
+  `${point.status} ${point.species}${point.group ? ` · ${point.group}` : ""} · ${normalizePriceUnit(point.priceUnit)}`;
+
+interface PriceUnitDataset {
+  priceUnit?: string;
+}
+
+type PriceLineDataset = ChartDataset<"line", (number | null)[]> &
+  Required<PriceUnitDataset>;
 
 const organize = (points: TimeSeriesPoint[]) => {
   const labels = [...new Set(points.map((point) => point.date))].sort();
@@ -69,7 +78,7 @@ export function buildPriceChartData(
     return { labels: [], datasets: [] };
   }
   const { labels, series, examples } = organize(points);
-  const datasets: ChartData<"line", (number | null)[], string>["datasets"] = [];
+  const datasets: PriceLineDataset[] = [];
 
   /*
    * Chart.js의 공통 날짜 축에서 희소 시계열을 정확히 맞추려면 각 시리즈를 전체 날짜에
@@ -87,6 +96,7 @@ export function buildPriceChartData(
     datasets.push(
       {
         label: `${label} · 평균가`,
+        priceUnit: example.priceUnit,
         data: values("priceAvg"),
         borderColor: color,
         backgroundColor: color,
@@ -96,6 +106,7 @@ export function buildPriceChartData(
       },
       {
         label: `${label} · 고가`,
+        priceUnit: example.priceUnit,
         data: values("priceHigh"),
         borderColor: color,
         borderDash: [7, 5],
@@ -105,6 +116,7 @@ export function buildPriceChartData(
       },
       {
         label: `${label} · 저가`,
+        priceUnit: example.priceUnit,
         data: values("priceLow"),
         borderColor: color,
         borderDash: [2, 4],
@@ -221,7 +233,14 @@ export function buildMarketChartData(
 
       return {
         ...dataset,
-        data: values.map((value, x) => ({ x, y: value }))
+        data: values.map((value, x) => ({
+          x,
+          y: value,
+          priceUnit:
+            dataset.type === "line"
+              ? (dataset as PriceUnitDataset).priceUnit ?? null
+              : null
+        }))
       };
     })
   };

@@ -17,6 +17,7 @@ const point: TimeSeriesPoint = {
   species: "광어",
   status: "활",
   group: null,
+  priceUnit: "kg",
   priceAvg: 18000,
   priceHigh: 22000,
   priceLow: 15000,
@@ -32,10 +33,11 @@ describe("대시보드 데이터 훅", () => {
     ]);
     vi.mocked(dashboardApi.getSnapshots).mockResolvedValue([
       {
-        key: "광어::활",
+        key: "광어::활::kg",
         species: "광어",
         status: "활",
         category: "어류",
+        priceUnit: "kg",
         priceAvg: 18000,
         changeRate: -2.4,
         tradeAmount: 180000
@@ -45,14 +47,14 @@ describe("대시보드 데이터 훅", () => {
 
   it("목록과 선택 시계열을 불러와 상태를 갱신한다", async () => {
     vi.mocked(dashboardApi.getTimeSeries).mockResolvedValue([point]);
-    const selectedKeys = new Set(["광어::활"]);
+    const selectedKeys = new Set(["광어::활::kg"]);
 
     const { result } = renderHook(() => useDashboard(selectedKeys, "none"));
 
     await waitFor(() => expect(result.current.points).toEqual([point]));
     expect(result.current.loading).toBe(false);
     expect(result.current.error).toBeNull();
-    expect(result.current.snapshots[0].key).toBe("광어::활");
+    expect(result.current.snapshots[0].key).toBe("광어::활::kg");
   });
 
   it("분리 기준 변경 시 이전 시계열 요청을 취소한다", async () => {
@@ -63,7 +65,7 @@ describe("대시보드 데이터 훅", () => {
         return new Promise(() => undefined);
       }
     );
-    const selectedKeys = new Set(["광어::활"]);
+    const selectedKeys = new Set(["광어::활::kg"]);
     const { rerender } = renderHook(
       ({ groupBy }: { groupBy: GroupBy }) =>
         useDashboard(selectedKeys, groupBy),
@@ -80,7 +82,7 @@ describe("대시보드 데이터 훅", () => {
 
   it("선택한 조회 기간을 시계열 API에 전달한다", async () => {
     vi.mocked(dashboardApi.getTimeSeries).mockResolvedValue([point]);
-    const selectedKeys = new Set(["광어::활"]);
+    const selectedKeys = new Set(["광어::활::kg"]);
 
     renderHook(() =>
       useDashboard(
@@ -93,12 +95,19 @@ describe("대시보드 데이터 훅", () => {
 
     await waitFor(() =>
       expect(dashboardApi.getTimeSeries).toHaveBeenCalledWith(
-        [{ species: "광어", status: "활" }],
+        [{ species: "광어", status: "활", priceUnit: "kg" }],
         "none",
         expect.any(AbortSignal),
         "2026-07-07",
         "2026-07-26"
       )
     );
+  });
+
+  it("잘못된 snapshot key는 시계열 선택에서 제외한다", async () => {
+    renderHook(() => useDashboard(new Set(["광어::활"]), "none"));
+
+    await waitFor(() => expect(dashboardApi.getSnapshots).toHaveBeenCalled());
+    expect(dashboardApi.getTimeSeries).not.toHaveBeenCalled();
   });
 });

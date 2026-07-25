@@ -13,6 +13,7 @@ def create_record(
     status="활",
     origin="완도",
     spec="10미",
+    packaging="1kg",
     quantity=1,
     high=12000,
     low=8000,
@@ -24,7 +25,7 @@ def create_record(
         status=status,
         origin=origin,
         spec=spec,
-        packaging="1kg",
+        packaging=packaging,
         quantity=quantity,
         price_high=high,
         price_low=low,
@@ -78,6 +79,117 @@ def test_timeseries_uses_weighted_average_and_price_envelope():
     assert point["price_low"] == 7000
     assert point["quantity"] == 4
     assert point["trade_value"] == 70000
+    assert point["price_unit"] == "1kg"
+
+
+@pytest.mark.django_db
+def test_timeseries_keeps_different_packaging_units_separate():
+    target = date(2026, 7, 24)
+    create_record(target, packaging="kg", quantity=1, average=10000)
+    create_record(
+        target,
+        origin="제주",
+        packaging="box",
+        quantity=3,
+        average=20000,
+    )
+
+    response = APIClient().get(
+        "/api/v1/timeseries/",
+        {
+            "species": "전복",
+            "status": "활",
+            "start_date": "2026-07-24",
+            "end_date": "2026-07-24",
+        },
+    )
+
+    assert response.status_code == 200
+    assert [
+        (item["price_unit"], item["price_avg"], item["quantity"])
+        for item in response.json()["results"]
+    ] == [("box", 20000, 3), ("kg", 10000, 1)]
+
+
+@pytest.mark.django_db
+def test_timeseries_filters_the_selected_packaging_unit():
+    target = date(2026, 7, 24)
+    create_record(target, packaging="kg", average=10000)
+    create_record(target, packaging="box", average=20000)
+
+    response = APIClient().get(
+        "/api/v1/timeseries/",
+        {
+            "species": "전복",
+            "status": "활",
+            "price_unit": "kg",
+            "start_date": "2026-07-24",
+            "end_date": "2026-07-24",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["results"] == [
+        {
+            "date": "2026-07-24",
+            "species": "전복",
+            "status": "활",
+            "group": None,
+            "price_avg": 10000,
+            "price_high": 12000,
+            "price_low": 8000,
+            "quantity": 1,
+            "trade_value": 10000,
+            "price_unit": "kg",
+        }
+    ]
+
+
+@pytest.mark.django_db
+def test_timeseries_exposes_and_filters_an_unknown_packaging_unit():
+    target = date(2026, 7, 24)
+    create_record(target, packaging="", average=10000)
+    create_record(target, packaging="미상", average=20000)
+
+    blank_response = APIClient().get(
+        "/api/v1/timeseries/",
+        {
+            "species": "전복",
+            "status": "활",
+            "price_unit": "",
+            "start_date": "2026-07-24",
+            "end_date": "2026-07-24",
+        },
+    )
+    literal_response = APIClient().get(
+        "/api/v1/timeseries/",
+        {
+            "species": "전복",
+            "status": "활",
+            "price_unit": "미상",
+            "start_date": "2026-07-24",
+            "end_date": "2026-07-24",
+        },
+    )
+
+    assert blank_response.status_code == 200
+    assert blank_response.json()["results"] == [
+        {
+            "date": "2026-07-24",
+            "species": "전복",
+            "status": "활",
+            "group": None,
+            "price_avg": 10000,
+            "price_high": 12000,
+            "price_low": 8000,
+            "quantity": 1,
+            "trade_value": 10000,
+            "price_unit": "",
+        }
+    ]
+    assert literal_response.status_code == 200
+    assert literal_response.json()["results"][0]["price_avg"] == 20000
+    assert literal_response.json()["results"][0]["price_unit"] == "미상"
 
 
 @pytest.mark.django_db
@@ -110,6 +222,19 @@ def test_timeseries_rejects_invalid_group_by_as_business_result():
     assert response.json()["code"] == "invalid_group_by"
 
 
+def test_timeseries_rejects_misaligned_price_unit_selection_as_business_result():
+    response = APIClient().get(
+        "/api/v1/timeseries/",
+        {
+            "species": "전복",
+            "price_unit": ["kg", "box"],
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.json()["code"] == "invalid_selection"
+
+
 @pytest.mark.django_db
 def test_snapshot_compares_with_previous_trading_day():
     create_record(date(2026, 7, 24), average=8000, quantity=2)
@@ -125,6 +250,35 @@ def test_snapshot_compares_with_previous_trading_day():
     assert body["results"][0]["price_avg"] == 17500
     assert body["results"][0]["change_rate"] == 118.75
     assert body["results"][0]["trade_value"] == 70000
+    assert body["results"][0]["price_unit"] == "1kg"
+
+
+@pytest.mark.django_db
+def test_snapshot_omits_change_rate_when_price_unit_changes():
+    create_record(date(2026, 7, 24), packaging="kg", average=10000)
+    create_record(date(2026, 7, 27), packaging="box", average=20000)
+
+    response = APIClient().get("/api/v1/snapshot/", {"date": "2026-07-27"})
+
+    assert response.status_code == 200
+    result = response.json()["results"][0]
+    assert result["price_unit"] == "box"
+    assert result["change_rate"] is None
+
+
+@pytest.mark.django_db
+def test_snapshot_keeps_same_species_status_packaging_units_separate():
+    target = date(2026, 7, 27)
+    create_record(target, packaging="kg", average=10000)
+    create_record(target, packaging="box", average=20000)
+
+    response = APIClient().get("/api/v1/snapshot/", {"date": target.isoformat()})
+
+    assert response.status_code == 200
+    assert sorted(
+        (item["price_unit"], item["price_avg"])
+        for item in response.json()["results"]
+    ) == [("box", 20000), ("kg", 10000)]
 
 
 @pytest.mark.django_db
@@ -164,6 +318,7 @@ def test_timeseries_without_status_aggregates_the_whole_species():
             "price_low": 8000,
             "quantity": 4,
             "trade_value": 70000,
+            "price_unit": "1kg",
         }
     ]
 

@@ -1,10 +1,11 @@
 import type {
   CatalogItem,
   GroupBy,
-  SpeciesSelection,
+  PriceSelection,
   SpeciesSnapshot,
   TimeSeriesPoint
 } from "../types";
+import { createSelectionKey } from "../selectionKey";
 
 const API_BASE_URL = (
   import.meta.env.VITE_API_BASE_URL ?? "/api/v1"
@@ -53,9 +54,11 @@ const normalizeCatalog = (item: ApiObject): CatalogItem => ({
 const normalizeSnapshot = (item: ApiObject): SpeciesSnapshot => {
   const species = String(item.species ?? "");
   const status = String(item.status ?? "");
+  const priceUnit = String(item.price_unit ?? "").trim();
   return {
     ...normalizeCatalog(item),
-    key: `${species}::${status}`,
+    key: createSelectionKey({ species, status, priceUnit }),
+    priceUnit,
     priceAvg: numberOrNull(item.price_avg),
     changeRate: numberOrNull(item.change_rate),
     tradeAmount: requiredNumber(item.trade_amount ?? item.trade_value)
@@ -67,6 +70,7 @@ const normalizePoint = (item: ApiObject): TimeSeriesPoint => ({
   species: String(item.species ?? ""),
   status: String(item.status ?? ""),
   group: item.group === null || item.group === undefined ? null : String(item.group),
+  priceUnit: String(item.price_unit ?? "").trim(),
   priceAvg: numberOrNull(item.price_avg),
   priceHigh: requiredNumber(item.price_high),
   priceLow: requiredNumber(item.price_low),
@@ -86,16 +90,17 @@ export const dashboardApi = {
   },
 
   async getTimeSeries(
-    selections: SpeciesSelection[],
+    selections: PriceSelection[],
     groupBy: GroupBy,
     signal: AbortSignal,
     startDate?: string,
     endDate?: string
   ): Promise<TimeSeriesPoint[]> {
     const params = new URLSearchParams({ group_by: groupBy });
-    selections.forEach(({ species, status }) => {
+    selections.forEach(({ species, status, priceUnit }) => {
       params.append("species", species);
       params.append("status", status);
+      params.append("price_unit", priceUnit);
     });
     if (startDate) {
       params.set("start_date", startDate);

@@ -6,6 +6,11 @@ import {
   type SortDirection
 } from "../marketTable";
 import { matchesSpeciesSearch } from "../speciesKnowledge";
+import {
+  formatPriceAmount,
+  formatPriceWithUnit,
+  normalizePriceUnit
+} from "../priceUnit";
 import type { SpeciesSnapshot } from "../types";
 
 interface SpeciesSidebarProps {
@@ -15,9 +20,6 @@ interface SpeciesSidebarProps {
   onSelectionChange: (key: string, selected: boolean) => void;
   onFavoriteToggle: (key: string) => void;
 }
-
-const formatPrice = (value: number | null): string =>
-  value === null ? "-" : `${Math.round(value).toLocaleString("ko-KR")}원`;
 
 const COLUMNS: { key: MarketSortKey; label: string }[] = [
   { key: "species", label: "어종명" },
@@ -201,15 +203,26 @@ export function SpeciesSidebar({
                 <button
                   className="species-select"
                   aria-pressed={selected}
-                  aria-label={`${item.status} ${item.species}`}
+                  aria-label={`${item.status} ${item.species} ${normalizePriceUnit(item.priceUnit)}`}
+                  title={
+                    item.priceAvg === null
+                      ? undefined
+                      : formatPriceWithUnit(item.priceAvg, item.priceUnit)
+                  }
                   onClick={() => onSelectionChange(item.key, !selected)}
                 />
                 <span className="species-name" role="cell">
                   <small>{item.status || "일반"}</small>
                   <strong>{item.species}</strong>
                 </span>
-                <strong className="species-price" role="cell">
-                  {formatPrice(item.priceAvg)}
+                <strong
+                  className="species-price"
+                  role="cell"
+                >
+                  <span>{formatPriceAmount(item.priceAvg)}</span>
+                  {item.priceAvg !== null && (
+                    <small>/{normalizePriceUnit(item.priceUnit)}</small>
+                  )}
                 </strong>
                 <span className={`species-change ${rateClass}`} role="cell">
                   {item.changeRate === null
@@ -221,7 +234,7 @@ export function SpeciesSidebar({
                 </span>
                 <button
                   className={`favorite-button ${favorite ? "active" : ""}`}
-                  aria-label={`${item.species} 관심어종 ${favorite ? "제거" : "추가"}`}
+                  aria-label={`${item.species} ${normalizePriceUnit(item.priceUnit)} 관심어종 ${favorite ? "제거" : "추가"}`}
                   aria-pressed={favorite}
                   onClick={() => onFavoriteToggle(item.key)}
                 >

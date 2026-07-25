@@ -56,10 +56,12 @@ def _category_map(species_names) -> dict[str, str]:
 
 def _selection_filter(selections) -> Q:
     query = Q()
-    for species, status in selections:
+    for species, status, price_unit in selections:
         pair = Q(species=species)
         if status is not None:
             pair &= Q(status=status)
+        if price_unit is not None:
+            pair &= Q(packaging=price_unit)
         query |= pair
     return query
 
@@ -130,9 +132,9 @@ class TimeSeriesView(APIView):
             _selection_filter(query.selections),
             date__range=(query.start_date, query.end_date),
         )
-        group_fields = ["date", "species"]
+        group_fields = ["date", "species", "packaging"]
         status_specific = all(
-            status is not None for _, status in query.selections
+            status is not None for _, status, _ in query.selections
         )
         if status_specific:
             group_fields.append("status")
@@ -159,6 +161,7 @@ class TimeSeriesView(APIView):
                     "price_low": _number(aggregate["price_low_value"]),
                     "quantity": _number(quantity),
                     "trade_value": _number(trade_amount),
+                    "price_unit": aggregate["packaging"],
                 }
             )
         return Response({"results": results})
@@ -167,7 +170,7 @@ class TimeSeriesView(APIView):
 def _snapshot_rows(target_date: date):
     return _aggregate(
         PriceRecord.objects.filter(date=target_date),
-        ["species", "status"],
+        ["species", "status", "packaging"],
     )
 
 
@@ -196,7 +199,13 @@ class SnapshotView(APIView):
         if previous_date:
             for aggregate in _snapshot_rows(previous_date):
                 quantity = aggregate["quantity_total"] or Decimal(0)
-                previous[(aggregate["species"], aggregate["status"])] = (
+                previous[
+                    (
+                        aggregate["species"],
+                        aggregate["status"],
+                        aggregate["packaging"],
+                    )
+                ] = (
                     aggregate["trade_amount"] / quantity if quantity else None
                 )
 
@@ -208,7 +217,11 @@ class SnapshotView(APIView):
             trade_amount = aggregate["trade_amount"] or Decimal(0)
             average = trade_amount / quantity if quantity else None
             previous_average = previous.get(
-                (aggregate["species"], aggregate["status"])
+                (
+                    aggregate["species"],
+                    aggregate["status"],
+                    aggregate["packaging"],
+                )
             )
             change_rate = None
             if (
@@ -229,6 +242,7 @@ class SnapshotView(APIView):
                     "change_rate": change_rate,
                     "quantity": _number(quantity),
                     "trade_value": _number(trade_amount),
+                    "price_unit": aggregate["packaging"],
                 }
             )
         results.sort(

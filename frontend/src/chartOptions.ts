@@ -1,4 +1,5 @@
 import type { ChartOptions } from "chart.js";
+import { formatPriceWithUnit } from "./priceUnit";
 import type { Theme } from "./types";
 
 type MarketChartOptions = ChartOptions<"line" | "bar">;
@@ -29,7 +30,7 @@ export const createMarketChartOptions = (
     responsive: true,
     maintainAspectRatio: false,
     animation: false,
-    layout: { padding: { right: 72 } },
+    layout: { padding: { right: 104 } },
     interaction: { mode: "index", intersect: false },
     plugins: {
       legend: {
@@ -47,6 +48,18 @@ export const createMarketChartOptions = (
             return typeof x === "number"
               ? dateLabels[Math.round(x)] ?? ""
               : "";
+          },
+          label: (context) => {
+            if (context.dataset.yAxisID === "price") {
+              const raw = context.raw as {
+                priceUnit?: string | null;
+              };
+              return `${context.dataset.label ?? ""}: ${formatPriceWithUnit(
+                context.parsed.y,
+                raw.priceUnit
+              )}`;
+            }
+            return `${context.dataset.label ?? ""}: ${context.formattedValue}`;
           }
         }
       },

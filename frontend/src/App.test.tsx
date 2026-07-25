@@ -31,7 +31,21 @@ vi.mock("./components/MarketOverview", () => ({
 }));
 
 vi.mock("./components/SpeciesSidebar", () => ({
-  SpeciesSidebar: () => <aside data-testid="species-sidebar" />
+  SpeciesSidebar: ({
+    items,
+    onSelectionChange
+  }: {
+    items: { key: string }[];
+    onSelectionChange: (key: string, selected: boolean) => void;
+  }) => (
+    <aside data-testid="species-sidebar">
+      {items[0] && (
+        <button onClick={() => onSelectionChange(items[0].key, true)}>
+          첫 어종 선택
+        </button>
+      )}
+    </aside>
+  )
 }));
 
 describe("시장 시세 툴바", () => {
@@ -46,6 +60,7 @@ describe("시장 시세 툴바", () => {
           species: "금태",
           status: "선",
           group: null,
+          priceUnit: "kg",
           priceAvg: 100,
           priceHigh: 120,
           priceLow: 80,
@@ -57,6 +72,7 @@ describe("시장 시세 툴바", () => {
           species: "금태",
           status: "선",
           group: null,
+          priceUnit: "kg",
           priceAvg: 400,
           priceHigh: 450,
           priceLow: 350,
@@ -135,6 +151,43 @@ describe("시장 시세 툴바", () => {
       "none",
       "2000-01-01",
       undefined
+    );
+  });
+
+  it("선택 snapshot의 가격 단위를 현재가 source에 전달한다", () => {
+    useDashboardMock.mockReturnValue({
+      snapshots: [
+        {
+          key: "금태::선::kg",
+          species: "금태",
+          status: "선",
+          category: "어류",
+          priceUnit: "kg",
+          priceAvg: 23000,
+          changeRate: 1,
+          tradeAmount: 230000
+        }
+      ],
+      points: [],
+      loading: false,
+      error: null
+    });
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "첫 어종 선택" }));
+
+    expect(marketChartsMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        currentPrices: [
+          {
+            species: "금태",
+            status: "선",
+            priceUnit: "kg",
+            price: 23000
+          }
+        ]
+      }),
+      expect.anything()
     );
   });
 });

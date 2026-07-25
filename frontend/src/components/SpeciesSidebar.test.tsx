@@ -6,19 +6,21 @@ import type { SpeciesSnapshot } from "../types";
 
 const snapshots: SpeciesSnapshot[] = [
   {
-    key: "광어::활",
+    key: "광어::활::kg",
     species: "광어",
     status: "활",
     category: "어류",
+    priceUnit: "kg",
     priceAvg: 18000,
     changeRate: -2.4,
     tradeAmount: 2160000
   },
   {
-    key: "전복::활",
+    key: "전복::활::box",
     species: "전복",
     status: "활",
     category: "패류",
+    priceUnit: "box",
     priceAvg: 25000,
     changeRate: 3.1,
     tradeAmount: 1000000
@@ -26,20 +28,22 @@ const snapshots: SpeciesSnapshot[] = [
 ];
 
 const otherSnapshot: SpeciesSnapshot = {
-  key: "해삼::선",
+  key: "해삼::선::kg",
   species: "해삼",
   status: "선",
   category: "기타",
+  priceUnit: "kg",
   priceAvg: 12000,
   changeRate: null,
   tradeAmount: 500000
 };
 
 const aliasSnapshot: SpeciesSnapshot = {
-  key: "흑점줄전갱이::선",
+  key: "흑점줄전갱이::선::kg",
   species: "흑점줄전갱이",
   status: "선",
   category: "어류",
+  priceUnit: "kg",
   priceAvg: 42000,
   changeRate: 1.5,
   tradeAmount: 800000
@@ -70,6 +74,26 @@ describe("어종 사이드바", () => {
       screen.getByRole("columnheader", { name: /거래대금/ })
     ).toBeVisible();
     expect(screen.getByText("216만원")).toBeVisible();
+    expect(screen.getByText("18,000원")).toBeVisible();
+    expect(screen.getByText("/kg")).toBeVisible();
+  });
+
+  it("긴 가격 단위의 전체값을 title과 접근성 이름으로 제공한다", () => {
+    const longUnit = "매우긴원본포장단위이름";
+    render(
+      <SpeciesSidebar
+        items={[{ ...snapshots[0], key: `광어::활::${longUnit}`, priceUnit: longUnit }]}
+        selectedKeys={new Set()}
+        favoriteKeys={new Set()}
+        onSelectionChange={vi.fn()}
+        onFavoriteToggle={vi.fn()}
+      />
+    );
+
+    expect(screen.getByTitle(`18,000원/${longUnit}`)).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: `활 광어 ${longUnit}` })
+    ).toBeVisible();
   });
 
   it("카테고리로 목록을 필터링한다", async () => {
@@ -154,19 +178,22 @@ describe("어종 사이드바", () => {
     const row = screen.getByRole("button", { name: /활 광어/ });
 
     await user.click(row);
-    expect(onSelectionChange).toHaveBeenCalledWith("광어::활", true);
+    expect(onSelectionChange).toHaveBeenCalledWith("광어::활::kg", true);
 
     rerender(
       <SpeciesSidebar
         items={snapshots}
-        selectedKeys={new Set(["광어::활"])}
+        selectedKeys={new Set(["광어::활::kg"])}
         favoriteKeys={new Set()}
         onSelectionChange={onSelectionChange}
         onFavoriteToggle={vi.fn()}
       />
     );
     await user.click(screen.getByRole("button", { name: /활 광어/ }));
-    expect(onSelectionChange).toHaveBeenLastCalledWith("광어::활", false);
+    expect(onSelectionChange).toHaveBeenLastCalledWith(
+      "광어::활::kg",
+      false
+    );
     const selectedRow = screen
       .getByRole("button", { name: /활 광어/ })
       .closest('[role="row"]');
@@ -184,22 +211,24 @@ describe("어종 사이드바", () => {
       <SpeciesSidebar
         items={snapshots}
         selectedKeys={new Set()}
-        favoriteKeys={new Set(["광어::활"])}
+        favoriteKeys={new Set(["광어::활::kg"])}
         onSelectionChange={onSelectionChange}
         onFavoriteToggle={onFavoriteToggle}
       />
     );
 
     await user.click(screen.getByRole("tab", { name: "패류" }));
-    await user.click(screen.getByRole("button", { name: "전복 관심어종 추가" }));
-    expect(onFavoriteToggle).toHaveBeenCalledWith("전복::활");
+    await user.click(
+      screen.getByRole("button", { name: "전복 box 관심어종 추가" })
+    );
+    expect(onFavoriteToggle).toHaveBeenCalledWith("전복::활::box");
     expect(onSelectionChange).not.toHaveBeenCalled();
 
     await user.click(screen.getByRole("tab", { name: "관심어종" }));
     expect(screen.getByText("광어")).toBeInTheDocument();
     expect(screen.queryByText("전복")).not.toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "광어 관심어종 제거" })
+      screen.getByRole("button", { name: "광어 kg 관심어종 제거" })
     ).toContainElement(screen.getByTestId("fish-icon"));
   });
 
