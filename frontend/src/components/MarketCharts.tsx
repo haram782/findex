@@ -8,9 +8,12 @@ import {
   PointElement,
   Tooltip
 } from "chart.js";
+import zoomPlugin from "chartjs-plugin-zoom";
+import { useEffect, useMemo, useRef } from "react";
 import { Bar, Line } from "react-chartjs-2";
 import { buildBarChartData, buildPriceChartData } from "../chartData";
-import type { TimeSeriesPoint, VolumeMetric } from "../types";
+import { createMarketChartOptions } from "../chartOptions";
+import type { Theme, TimeSeriesPoint, VolumeMetric } from "../types";
 
 ChartJS.register(
   CategoryScale,
@@ -19,41 +22,80 @@ ChartJS.register(
   LineElement,
   BarElement,
   Tooltip,
-  Legend
+  Legend,
+  zoomPlugin
 );
 
 interface MarketChartsProps {
   points: TimeSeriesPoint[];
   volumeMetric: VolumeMetric;
+  theme: Theme;
 }
 
-const commonOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  interaction: { mode: "index" as const, intersect: false },
-  plugins: {
-    legend: {
-      labels: { color: "#9caac0", boxWidth: 14, usePointStyle: true }
-    }
-  },
-  scales: {
-    x: { ticks: { color: "#74849b" }, grid: { color: "#1c2939" } },
-    y: { ticks: { color: "#74849b" }, grid: { color: "#1c2939" } }
-  }
-};
+export function MarketCharts({
+  points,
+  volumeMetric,
+  theme
+}: MarketChartsProps) {
+  const priceChart = useRef<ChartJS<"line"> | null>(null);
+  const volumeChart = useRef<ChartJS<"bar"> | null>(null);
+  const priceOptions = useMemo(
+    () => createMarketChartOptions(theme),
+    [theme]
+  );
+  const volumeOptions = useMemo(
+    () => createMarketChartOptions(theme),
+    [theme]
+  );
 
-export function MarketCharts({ points, volumeMetric }: MarketChartsProps) {
+  const eachChart = (
+    action: (chart: ChartJS<"line"> | ChartJS<"bar">) => void
+  ) => {
+    if (priceChart.current) {
+      action(priceChart.current);
+    }
+    if (volumeChart.current) {
+      action(volumeChart.current);
+    }
+  };
+
+  const changeZoom = (factor: number) =>
+    eachChart((chart) => chart.zoom({ x: factor }));
+  const resetZoom = () => eachChart((chart) => chart.resetZoom());
+
+  useEffect(() => {
+    priceChart.current?.resetZoom();
+    volumeChart.current?.resetZoom();
+  }, [points]);
+
   return (
-    <div className="chart-stack">
-      <section className="chart-panel price-chart">
-        <Line data={buildPriceChartData(points)} options={commonOptions} />
-      </section>
-      <section className="chart-panel volume-chart">
-        <Bar
-          data={buildBarChartData(points, volumeMetric)}
-          options={commonOptions}
-        />
-      </section>
+    <div className="chart-area">
+      <div className="chart-controls">
+        <span>휠로 확대 · 드래그로 이동</span>
+        <button aria-label="차트 확대" onClick={() => changeZoom(1.2)}>
+          +
+        </button>
+        <button aria-label="차트 축소" onClick={() => changeZoom(0.8)}>
+          −
+        </button>
+        <button onClick={resetZoom}>초기화</button>
+      </div>
+      <div className="chart-stack">
+        <section className="chart-panel price-chart">
+          <Line
+            ref={priceChart}
+            data={buildPriceChartData(points)}
+            options={priceOptions}
+          />
+        </section>
+        <section className="chart-panel volume-chart">
+          <Bar
+            ref={volumeChart}
+            data={buildBarChartData(points, volumeMetric)}
+            options={volumeOptions}
+          />
+        </section>
+      </div>
     </div>
   );
 }

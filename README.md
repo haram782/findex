@@ -2,6 +2,7 @@
 
 노량진수산시장 경락시세를 수집해 어종별 가격과 거래량 추이를 보여주는 로컬
 대시보드입니다. 상세 설계는 [DESIGN.md](DESIGN.md)를 참고하세요.
+제품 Phase와 후속 작업은 [docs/ROADMAP.md](docs/ROADMAP.md)에서 추적합니다.
 
 ## 실행
 

@@ -15,7 +15,12 @@ interface DashboardState {
   error: string | null;
 }
 
-export function useDashboard(selectedKeys: Set<string>, groupBy: GroupBy) {
+export function useDashboard(
+  selectedKeys: Set<string>,
+  groupBy: GroupBy,
+  startDate?: string,
+  endDate?: string
+) {
   const [state, setState] = useState<DashboardState>({
     catalog: [],
     snapshots: [],
@@ -66,7 +71,13 @@ export function useDashboard(selectedKeys: Set<string>, groupBy: GroupBy) {
     }
     const controller = new AbortController();
     dashboardApi
-      .getTimeSeries(selections, groupBy, controller.signal)
+      .getTimeSeries(
+        selections,
+        groupBy,
+        controller.signal,
+        startDate,
+        endDate
+      )
       .then((points) =>
         setState((current) => ({
           ...current,
@@ -85,7 +96,7 @@ export function useDashboard(selectedKeys: Set<string>, groupBy: GroupBy) {
         }
       });
     return () => controller.abort();
-  }, [groupBy, selections]);
+  }, [endDate, groupBy, selections, startDate]);
 
   return {
     ...state,

@@ -31,13 +31,17 @@ describe("대시보드 API 클라이언트", () => {
     const result = await dashboardApi.getTimeSeries(
       [{ species: "광어", status: "활" }],
       "origin",
-      new AbortController().signal
+      new AbortController().signal,
+      "2026-07-01",
+      "2026-07-25"
     );
 
     const requestedUrl = String(fetchMock.mock.calls[0][0]);
     expect(requestedUrl).toContain("species=%EA%B4%91%EC%96%B4");
     expect(requestedUrl).toContain("status=%ED%99%9C");
     expect(requestedUrl).toContain("group_by=origin");
+    expect(requestedUrl).toContain("start_date=2026-07-01");
+    expect(requestedUrl).toContain("end_date=2026-07-25");
     expect(result[0]).toMatchObject({
       priceAvg: 19000,
       tradeAmount: 190000

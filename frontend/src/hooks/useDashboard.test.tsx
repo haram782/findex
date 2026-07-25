@@ -76,4 +76,28 @@ describe("대시보드 데이터 훅", () => {
     expect(signals[0].aborted).toBe(true);
     expect(signals[1].aborted).toBe(false);
   });
+
+  it("선택한 조회 기간을 시계열 API에 전달한다", async () => {
+    vi.mocked(dashboardApi.getTimeSeries).mockResolvedValue([point]);
+    const selectedKeys = new Set(["광어::활"]);
+
+    renderHook(() =>
+      useDashboard(
+        selectedKeys,
+        "none",
+        "2026-07-07",
+        "2026-07-26"
+      )
+    );
+
+    await waitFor(() =>
+      expect(dashboardApi.getTimeSeries).toHaveBeenCalledWith(
+        [{ species: "광어", status: "활" }],
+        "none",
+        expect.any(AbortSignal),
+        "2026-07-07",
+        "2026-07-26"
+      )
+    );
+  });
 });

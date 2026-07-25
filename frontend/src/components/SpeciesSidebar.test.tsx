@@ -30,7 +30,9 @@ describe("어종 사이드바", () => {
       <SpeciesSidebar
         items={snapshots}
         selectedKeys={new Set()}
+        favoriteKeys={new Set()}
         onSelectionChange={vi.fn()}
+        onFavoriteToggle={vi.fn()}
       />
     );
 
@@ -47,7 +49,9 @@ describe("어종 사이드바", () => {
       <SpeciesSidebar
         items={snapshots}
         selectedKeys={new Set()}
+        favoriteKeys={new Set()}
         onSelectionChange={onSelectionChange}
+        onFavoriteToggle={vi.fn()}
       />
     );
     const row = screen.getByRole("button", { name: /활 광어/ });
@@ -59,7 +63,9 @@ describe("어종 사이드바", () => {
       <SpeciesSidebar
         items={snapshots}
         selectedKeys={new Set(["광어::활"])}
+        favoriteKeys={new Set()}
         onSelectionChange={onSelectionChange}
+        onFavoriteToggle={vi.fn()}
       />
     );
     await user.click(screen.getByRole("button", { name: /활 광어/ }));
@@ -69,5 +75,27 @@ describe("어종 사이드바", () => {
         "-2.40%"
       )
     ).toHaveClass("negative");
+  });
+
+  it("별 버튼으로 즐겨찾기를 바꾸고 즐겨찾기만 표시한다", async () => {
+    const user = userEvent.setup();
+    const onFavoriteToggle = vi.fn();
+    render(
+      <SpeciesSidebar
+        items={snapshots}
+        selectedKeys={new Set()}
+        favoriteKeys={new Set(["광어::활"])}
+        onSelectionChange={vi.fn()}
+        onFavoriteToggle={onFavoriteToggle}
+      />
+    );
+
+    await user.click(screen.getByRole("tab", { name: "패류" }));
+    await user.click(screen.getByRole("button", { name: "전복 즐겨찾기 추가" }));
+    expect(onFavoriteToggle).toHaveBeenCalledWith("전복::활");
+
+    await user.click(screen.getByRole("tab", { name: "즐겨찾기" }));
+    expect(screen.getByText("광어")).toBeInTheDocument();
+    expect(screen.queryByText("전복")).not.toBeInTheDocument();
   });
 });
