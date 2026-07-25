@@ -1,5 +1,5 @@
 from datetime import date
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 
 from django.db.models import (
     DecimalField,
@@ -37,6 +37,12 @@ def _number(value: Decimal | None):
     if value == value.to_integral_value():
         return int(value)
     return float(value)
+
+
+def _rounded_price(value: Decimal | None):
+    if value is None:
+        return None
+    return int(value.quantize(Decimal("1"), rounding=ROUND_HALF_UP))
 
 
 def _category_map(species_names) -> dict[str, str]:
@@ -148,7 +154,7 @@ class TimeSeriesView(APIView):
                         if query.group_by != "none"
                         else None
                     ),
-                    "price_avg": _number(average),
+                    "price_avg": _rounded_price(average),
                     "price_high": _number(aggregate["price_high_value"]),
                     "price_low": _number(aggregate["price_low_value"]),
                     "quantity": _number(quantity),
@@ -219,7 +225,7 @@ class SnapshotView(APIView):
                     "species": aggregate["species"],
                     "status": aggregate["status"],
                     "category": categories.get(aggregate["species"], "other"),
-                    "price_avg": _number(average),
+                    "price_avg": _rounded_price(average),
                     "change_rate": change_rate,
                     "quantity": _number(quantity),
                 }

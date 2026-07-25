@@ -189,6 +189,41 @@ def test_timeseries_returns_null_average_for_zero_quantity():
 
 
 @pytest.mark.django_db
+def test_timeseries_rounds_half_won_average_up_to_an_integer():
+    target = date(2026, 7, 24)
+    create_record(target, quantity=1, average=10000)
+    create_record(target, quantity=1, average=10001)
+
+    response = APIClient().get(
+        "/api/v1/timeseries/",
+        {
+            "species": "전복",
+            "status": "활",
+            "start_date": "2026-07-24",
+            "end_date": "2026-07-24",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["results"][0]["price_avg"] == 10001
+
+
+@pytest.mark.django_db
+def test_snapshot_rounds_average_price_to_an_integer():
+    target = date(2026, 7, 24)
+    create_record(target, quantity=1, average=10000)
+    create_record(target, quantity=1, average=10001)
+
+    response = APIClient().get(
+        "/api/v1/snapshot/",
+        {"date": "2026-07-24"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["results"][0]["price_avg"] == 10001
+
+
+@pytest.mark.django_db
 def test_snapshot_defaults_to_the_latest_stored_trading_day():
     create_record(date(2026, 7, 24), average=8000)
     create_record(date(2026, 7, 27), average=10000)
