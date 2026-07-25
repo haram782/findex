@@ -1,0 +1,86 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-findex}
+      POSTGRES_USER: ${POSTGRES_USER:-findex}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-findex}
+      TZ: Asia/Seoul
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-findex} -d ${POSTGRES_DB:-findex}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      POSTGRES_HOST: postgres
+      TZ: Asia/Seoul
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - ./backend:/app/backend
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/catalog/', timeout=3)",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend.Dockerfile
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000/api/v1}
+      TZ: Asia/Seoul
+    command: npm run dev -- --host 0.0.0.0
+    volumes:
+      - ./frontend:/app/frontend
+      - frontend_node_modules:/app/frontend/node_modules
+    ports:
+      - "5173:5173"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  cron:
+    build:
+      context: .
+      dockerfile: docker/cron.Dockerfile
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      POSTGRES_HOST: postgres
+      TZ: Asia/Seoul
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  frontend_node_modules:

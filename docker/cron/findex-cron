@@ -1,0 +1,5 @@
+SHELL=/bin/sh
+PATH=/usr/local/bin:/usr/bin:/bin
+TZ=Asia/Seoul
+
+0 */3 * * * cd /app/backend && /usr/local/bin/python manage.py observe_market >> /proc/1/fd/1 2>> /proc/1/fd/2

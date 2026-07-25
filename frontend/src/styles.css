@@ -1,0 +1,354 @@
+:root {
+  color: #eaf1fb;
+  background: #07101b;
+  font-family:
+    Inter, Pretendard, "Noto Sans KR", system-ui, -apple-system, sans-serif;
+  font-synthesis: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 25% -10%, #12335b 0, transparent 34rem),
+    #07101b;
+}
+
+button {
+  color: inherit;
+  font: inherit;
+}
+
+.app-shell {
+  min-height: 100vh;
+}
+
+.topbar {
+  height: 74px;
+  padding: 0 30px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #1b2a3c;
+  background: #0a1522d9;
+  backdrop-filter: blur(14px);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-mark {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  color: white;
+  font-size: 22px;
+  font-weight: 800;
+  background: linear-gradient(145deg, #2496ff, #1861df);
+  box-shadow: 0 8px 24px #1f7ae855;
+}
+
+.brand h1,
+.brand p,
+.market-heading h2,
+.sidebar h2,
+.eyebrow {
+  margin: 0;
+}
+
+.brand h1 {
+  font-size: 17px;
+  letter-spacing: 0.02em;
+}
+
+.brand p {
+  margin-top: 2px;
+  color: #77879d;
+  font-size: 11px;
+}
+
+.market-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #8b9ab0;
+  font-size: 12px;
+}
+
+.market-status i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #2ecb81;
+  box-shadow: 0 0 12px #2ecb81;
+}
+
+.dashboard {
+  min-height: calc(100vh - 74px);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+}
+
+.market-main {
+  min-width: 0;
+  padding: 28px 30px;
+}
+
+.market-heading,
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.market-heading {
+  margin-bottom: 22px;
+}
+
+.eyebrow {
+  color: #258eff;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+}
+
+.market-heading h2,
+.sidebar h2 {
+  margin-top: 5px;
+  font-size: 21px;
+}
+
+.toolbar {
+  display: flex;
+  gap: 10px;
+}
+
+.segmented {
+  display: flex;
+  padding: 3px;
+  border: 1px solid #203047;
+  border-radius: 9px;
+  background: #0d1928;
+}
+
+.segmented button,
+.category-tabs button {
+  border: 0;
+  border-radius: 6px;
+  color: #77879d;
+  background: transparent;
+  cursor: pointer;
+}
+
+.segmented button {
+  padding: 7px 11px;
+  font-size: 11px;
+}
+
+.segmented button.active {
+  color: white;
+  background: #1c79e8;
+}
+
+.chart-stack {
+  display: grid;
+  grid-template-rows: minmax(390px, 2.3fr) minmax(180px, 1fr);
+  gap: 12px;
+  height: calc(100vh - 174px);
+  min-height: 610px;
+}
+
+.chart-panel {
+  min-height: 0;
+  padding: 17px;
+  border: 1px solid #1a2a3d;
+  border-radius: 13px;
+  background: #0a1522d9;
+}
+
+.notice {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  margin-top: 70px;
+  padding: 10px 16px;
+  border: 1px solid #243b57;
+  border-radius: 8px;
+  color: #96a7bd;
+  background: #0d1d2ee8;
+  transform: translateX(-50%);
+}
+
+.notice.error {
+  color: #ff879a;
+  border-color: #6a2a39;
+}
+
+.sidebar {
+  min-width: 0;
+  padding: 25px 20px;
+  border-left: 1px solid #1a2a3d;
+  background: #0a1420;
+}
+
+.count {
+  min-width: 28px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  color: #52a7ff;
+  background: #132b45;
+  text-align: center;
+  font-size: 11px;
+}
+
+.category-tabs {
+  display: flex;
+  gap: 4px;
+  margin: 18px 0 14px;
+  overflow-x: auto;
+}
+
+.category-tabs button {
+  flex: 0 0 auto;
+  padding: 6px 9px;
+  font-size: 11px;
+}
+
+.category-tabs button.active {
+  color: #eaf3ff;
+  background: #183657;
+}
+
+.species-table-header,
+.species-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.species-table-header {
+  padding: 8px 10px;
+  color: #586980;
+  font-size: 10px;
+}
+
+.species-table-header span:last-child {
+  text-align: right;
+}
+
+.species-list {
+  border-top: 1px solid #19283a;
+}
+
+.species-row {
+  width: 100%;
+  padding: 13px 10px;
+  border: 0;
+  border-bottom: 1px solid #152335;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: background 150ms ease;
+}
+
+.species-row:hover,
+.species-row.selected {
+  background: #10263f;
+}
+
+.species-row.selected {
+  box-shadow: inset 3px 0 #2388ff;
+}
+
+.species-name,
+.species-price {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.species-name {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.species-name small {
+  color: #667891;
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.species-price {
+  align-items: flex-end;
+  font-size: 10px;
+}
+
+.species-price strong {
+  font-size: 12px;
+}
+
+.positive {
+  color: #ff5874;
+}
+
+.negative {
+  color: #398dff;
+}
+
+.empty-sidebar {
+  padding: 30px 10px;
+  color: #667891;
+  text-align: center;
+  font-size: 12px;
+}
+
+@media (max-width: 960px) {
+  .dashboard {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    order: -1;
+    border-bottom: 1px solid #1a2a3d;
+    border-left: 0;
+  }
+
+  .species-list {
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  .market-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .chart-stack {
+    height: 750px;
+  }
+}
+@media (max-width: 560px) {
+  .topbar,
+  .market-main {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .toolbar {
+    width: 100%;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
