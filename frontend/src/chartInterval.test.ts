@@ -22,7 +22,7 @@ describe("시계열 봉 집계", () => {
   it("일봉은 원본 일별 데이터를 유지한다", () => {
     const points = [point("2026-07-20"), point("2026-07-21")];
 
-    expect(aggregateTimeSeries(points, "daily")).toEqual(points);
+    expect(aggregateTimeSeries(points, "day")).toEqual(points);
   });
 
   it("주봉은 수량 가중평균과 구간 고가·저가·합계를 계산한다", () => {
@@ -37,7 +37,7 @@ describe("시계열 봉 집계", () => {
           tradeAmount: 400
         })
       ],
-      "weekly"
+      "week"
     );
 
     expect(result).toEqual([
@@ -51,24 +51,51 @@ describe("시계열 봉 집계", () => {
     ]);
   });
 
-  it("20일봉은 21개 거래일을 두 구간으로 나눈다", () => {
-    const points = Array.from({ length: 21 }, (_, index) =>
-      point(`2026-07-${String(index + 1).padStart(2, "0")}`)
+  it("주봉은 일요일과 다음 월요일을 서로 다른 봉으로 나눈다", () => {
+    const result = aggregateTimeSeries(
+      [point("2026-07-26"), point("2026-07-27")],
+      "week"
     );
 
-    const result = aggregateTimeSeries(points, "twentyDay");
+    expect(result.map(({ date }) => date)).toEqual([
+      "2026-07-26",
+      "2026-07-27"
+    ]);
+  });
 
-    expect(result).toHaveLength(2);
-    expect(result[0]).toMatchObject({
-      date: "2026-07-20",
-      quantity: 40,
-      tradeAmount: 4000
-    });
-    expect(result[1]).toMatchObject({
-      date: "2026-07-21",
-      quantity: 2,
-      tradeAmount: 200
-    });
+  it.each([
+    ["month", "2026-07-31", "2026-08-01"],
+    ["quarter", "2026-03-31", "2026-04-01"],
+    ["halfYear", "2026-06-30", "2026-07-01"]
+  ] as const)(
+    "%s 봉은 달력 구간 경계에서 서로 다른 봉으로 나눈다",
+    (interval, firstDate, secondDate) => {
+      const result = aggregateTimeSeries(
+        [point(firstDate), point(secondDate)],
+        interval
+      );
+
+      expect(result).toHaveLength(2);
+      expect(result.map(({ date }) => date)).toEqual([
+        firstDate,
+        secondDate
+      ]);
+    }
+  );
+
+  it("월봉은 같은 달의 거래를 하나로 집계한다", () => {
+    const result = aggregateTimeSeries(
+      [point("2026-07-01"), point("2026-07-31")],
+      "month"
+    );
+
+    expect(result).toEqual([
+      point("2026-07-31", {
+        priceAvg: 100,
+        quantity: 4,
+        tradeAmount: 400
+      })
+    ]);
   });
 
   it("서로 다른 어종과 그룹은 같은 봉에서 섞지 않는다", () => {
@@ -78,7 +105,7 @@ describe("시계열 봉 집계", () => {
         point("2026-07-20", { species: "양태" }),
         point("2026-07-20", { group: "제주" })
       ],
-      "weekly"
+      "week"
     );
 
     expect(result).toHaveLength(3);

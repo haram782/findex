@@ -139,7 +139,7 @@ describe("차트 데이터 변환", () => {
       [points[0]],
       "quantity",
       1,
-      "weekly"
+      "week"
     );
 
     expect(chart.labels).toEqual([
@@ -149,7 +149,7 @@ describe("차트 데이터 변환", () => {
     ]);
   });
 
-  it("불완전한 20일봉의 실제 간격과 무관하게 20일 여백을 만든다", () => {
+  it("월봉은 실제 월 길이에 맞춘 날짜 여백을 만든다", () => {
     const chart = buildMarketChartData(
       [
         { ...points[0], date: "2026-07-20" },
@@ -157,14 +157,29 @@ describe("차트 데이터 변환", () => {
       ],
       "quantity",
       1,
-      "twentyDay"
+      "month"
     );
 
     expect(chart.labels).toEqual([
-      "2026-06-30",
+      "2026-06-20",
       "2026-07-20",
       "2026-07-21",
-      "2026-08-10"
+      "2026-08-21"
+    ]);
+  });
+
+  it("월봉 날짜 여백은 짧은 달의 마지막 날로 보정한다", () => {
+    const chart = buildMarketChartData(
+      [{ ...points[0], date: "2026-01-31" }],
+      "quantity",
+      1,
+      "month"
+    );
+
+    expect(chart.labels).toEqual([
+      "2025-12-31",
+      "2026-01-31",
+      "2026-02-28"
     ]);
   });
 

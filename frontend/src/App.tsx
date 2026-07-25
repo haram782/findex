@@ -1,13 +1,13 @@
 import { useMemo, useState } from "react";
+import { aggregateTimeSeries } from "./chartInterval";
 import { MarketCharts } from "./components/MarketCharts";
 import { MarketOverview } from "./components/MarketOverview";
 import { SpeciesSidebar } from "./components/SpeciesSidebar";
-import { getDateWindow } from "./dateRange";
 import { useDashboard } from "./hooks/useDashboard";
 import { useFavorites, useTheme } from "./hooks/usePreferences";
 import { getSpeciesAliases } from "./speciesKnowledge";
 import type {
-  DateRange,
+  ChartInterval,
   GroupBy,
   MarketTab,
   VolumeMetric
@@ -19,7 +19,7 @@ const GROUP_OPTIONS: { value: GroupBy; label: string }[] = [
   { value: "origin", label: "산지별" },
   { value: "spec", label: "규격별" }
 ];
-const RANGE_OPTIONS: { value: DateRange; label: string }[] = [
+const INTERVAL_OPTIONS: { value: ChartInterval; label: string }[] = [
   { value: "day", label: "1일" },
   { value: "week", label: "1주" },
   { value: "month", label: "1개월" },
@@ -27,21 +27,21 @@ const RANGE_OPTIONS: { value: DateRange; label: string }[] = [
   { value: "halfYear", label: "6개월" }
 ];
 const MAX_SELECTIONS = 5;
+const HISTORY_START_DATE = "2000-01-01";
 
 export default function App() {
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   const [groupBy, setGroupBy] = useState<GroupBy>("none");
   const [volumeMetric, setVolumeMetric] = useState<VolumeMetric>("quantity");
-  const [dateRange, setDateRange] = useState<DateRange>("quarter");
+  const [chartInterval, setChartInterval] = useState<ChartInterval>("day");
   const [activeTab, setActiveTab] = useState<MarketTab>("market");
   const { favoriteKeys, toggleFavorite } = useFavorites();
   const { theme, setTheme } = useTheme();
-  const dateWindow = useMemo(() => getDateWindow(dateRange), [dateRange]);
   const { snapshots, points, loading, error } = useDashboard(
     selectedKeys,
     groupBy,
-    dateWindow.startDate,
-    dateWindow.endDate
+    HISTORY_START_DATE,
+    undefined
   );
   const selectedItems = useMemo(
     () =>
@@ -49,6 +49,10 @@ export default function App() {
         .map((key) => snapshots.find((item) => item.key === key))
         .filter((item) => item !== undefined),
     [selectedKeys, snapshots]
+  );
+  const chartPoints = useMemo(
+    () => aggregateTimeSeries(points, chartInterval),
+    [chartInterval, points]
   );
   const currentPrices = useMemo(
     () =>
@@ -115,13 +119,13 @@ export default function App() {
           {activeTab === "market" && (
             <div className="market-tab-content" role="tabpanel">
               <div className="toolbar">
-                <div className="segmented" aria-label="조회 기간">
-                  {RANGE_OPTIONS.map((option) => (
+                <div className="segmented" aria-label="봉 단위">
+                  {INTERVAL_OPTIONS.map((option) => (
                     <button
-                      className={dateRange === option.value ? "active" : ""}
+                      className={chartInterval === option.value ? "active" : ""}
                       key={option.value}
-                      aria-pressed={dateRange === option.value}
-                      onClick={() => setDateRange(option.value)}
+                      aria-pressed={chartInterval === option.value}
+                      onClick={() => setChartInterval(option.value)}
                     >
                       {option.label}
                     </button>
@@ -170,17 +174,17 @@ export default function App() {
               {!loading &&
                 !error &&
                 selectedKeys.size > 0 &&
-                points.length === 0 && (
+                chartPoints.length === 0 && (
                   <div className="notice">
-                    선택한 기간의 거래 데이터가 없습니다.
+                    수집된 거래 데이터가 없습니다.
                   </div>
                 )}
               <MarketCharts
-                points={points}
+                points={chartPoints}
                 volumeMetric={volumeMetric}
                 theme={theme}
                 currentPrices={currentPrices}
-                chartInterval="daily"
+                chartInterval={chartInterval}
               />
             </div>
           )}

@@ -1,7 +1,6 @@
 export type GroupBy = "none" | "origin" | "spec";
 export type VolumeMetric = "quantity" | "tradeAmount";
-export type DateRange = "day" | "week" | "month" | "quarter" | "halfYear";
-export type ChartInterval = "daily" | "weekly" | "twentyDay";
+export type ChartInterval = "day" | "week" | "month" | "quarter" | "halfYear";
 export type MarketTab = "market" | "profile" | "news";
 export type Theme = "dark" | "light";
 

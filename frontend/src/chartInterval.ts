@@ -19,6 +19,28 @@ const mondayOf = (date: string): string => {
   return value.toISOString().slice(0, 10);
 };
 
+const monthOf = (date: string): string => date.slice(0, 7);
+
+const quarterOf = (date: string): string => {
+  const year = date.slice(0, 4);
+  const month = Number(date.slice(5, 7));
+  return `${year}-Q${Math.floor((month - 1) / 3) + 1}`;
+};
+
+const halfYearOf = (date: string): string => {
+  const year = date.slice(0, 4);
+  const month = Number(date.slice(5, 7));
+  return `${year}-H${month <= 6 ? 1 : 2}`;
+};
+
+const bucketOf: Record<ChartInterval, (date: string) => string> = {
+  day: (date) => date,
+  week: mondayOf,
+  month: monthOf,
+  quarter: quarterOf,
+  halfYear: halfYearOf
+};
+
 const byDateAndSeries = (left: TimeSeriesPoint, right: TimeSeriesPoint) =>
   left.date.localeCompare(right.date) ||
   seriesKey(left).localeCompare(seriesKey(right));
@@ -27,19 +49,14 @@ export function aggregateTimeSeries(
   points: TimeSeriesPoint[],
   interval: ChartInterval
 ): TimeSeriesPoint[] {
-  if (interval === "daily") {
+  if (interval === "day") {
     return points;
   }
 
-  const dates = [...new Set(points.map((point) => point.date))].sort();
-  const dateIndexes = new Map(dates.map((date, index) => [date, index]));
   const aggregates = new Map<string, Aggregate>();
 
   points.forEach((point) => {
-    const bucket =
-      interval === "weekly"
-        ? mondayOf(point.date)
-        : String(Math.floor((dateIndexes.get(point.date) ?? 0) / 20));
+    const bucket = bucketOf[interval](point.date);
     const key = `${seriesKey(point)}::${bucket}`;
     const current = aggregates.get(key);
     if (!current) {

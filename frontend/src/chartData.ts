@@ -6,11 +6,32 @@ import type {
 } from "./types";
 
 const COLORS = ["#2388ff", "#ff5874", "#2ecb81", "#f3a530", "#9b72f2"];
-const DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000;
-const INTERVAL_DAYS: Record<ChartInterval, number> = {
-  daily: 1,
-  weekly: 7,
-  twentyDay: 20
+
+const shiftDays = (date: string, days: number): string => {
+  const value = new Date(`${date}T00:00:00Z`);
+  value.setUTCDate(value.getUTCDate() + days);
+  return value.toISOString().slice(0, 10);
+};
+
+const shiftMonths = (date: string, months: number): string => {
+  const [year, month, day] = date.split("-").map(Number);
+  const target = new Date(Date.UTC(year, month - 1 + months, 1));
+  const lastDay = new Date(
+    Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0)
+  ).getUTCDate();
+  target.setUTCDate(Math.min(day, lastDay));
+  return target.toISOString().slice(0, 10);
+};
+
+const shiftInterval: Record<
+  ChartInterval,
+  (date: string, amount: number) => string
+> = {
+  day: shiftDays,
+  week: (date, amount) => shiftDays(date, amount * 7),
+  month: shiftMonths,
+  quarter: (date, amount) => shiftMonths(date, amount * 3),
+  halfYear: (date, amount) => shiftMonths(date, amount * 6)
 };
 
 export interface MarketChartPoint {
@@ -109,8 +130,8 @@ export function buildBarChartData(
 
   /*
    * 가격 차트와 동일한 날짜 축 정렬 때문에 O(시리즈×날짜) 투영이 필요하다. 어종 선택은
-   * 최대 5개이고 예상 날짜는 기본 90일이라 허용 가능하다. 데이터 규모가 늘면 객체형
-   * 좌표와 time scale로 전환해 입력 행 수에 비례하도록 개선한다.
+   * 최대 5개이고 현재 수집 이력이 짧아 허용 가능하다. 장기간 데이터가 누적되면 객체형
+   * 좌표와 time scale로 전환해 전체 수집 기간에서도 입력 행 수에 비례하도록 개선한다.
    */
   [...series.entries()].forEach(([key, byDate], index) => {
     const example = examples.get(key) as TimeSeriesPoint;
@@ -132,7 +153,7 @@ export function buildMarketChartData(
   points: TimeSeriesPoint[],
   metric: VolumeMetric,
   datePadding = 0,
-  chartInterval: ChartInterval = "daily"
+  chartInterval: ChartInterval = "day"
 ): ChartData<"line" | "bar", MarketChartPoint[], string> {
   if (points.length === 0) {
     return { labels: [], datasets: [] };
@@ -165,21 +186,19 @@ export function buildMarketChartData(
   if (datePadding > 0) {
     const timestamps = labels.map((label) => Date.parse(label));
     const validTimestamps = timestamps.every(Number.isFinite);
-    const interval =
-      INTERVAL_DAYS[chartInterval] * DAY_IN_MILLISECONDS;
-    const formatDate = (timestamp: number): string =>
-      new Date(timestamp).toISOString().slice(0, 10);
     const before = validTimestamps
       ? Array.from({ length: datePadding }, (_, index) =>
-          formatDate(
-            timestamps[0] - (datePadding - index) * interval
+          shiftInterval[chartInterval](
+            labels[0],
+            -(datePadding - index)
           )
         )
       : Array<string>(datePadding).fill("");
     const after = validTimestamps
       ? Array.from({ length: datePadding }, (_, index) =>
-          formatDate(
-            timestamps[timestamps.length - 1] + (index + 1) * interval
+          shiftInterval[chartInterval](
+            labels[labels.length - 1],
+            index + 1
           )
         )
       : Array<string>(datePadding).fill("");

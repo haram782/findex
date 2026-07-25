@@ -121,7 +121,7 @@ describe("시장 차트 확대와 이동", () => {
             price: 23000
           }
         ]}
-        chartInterval="daily"
+        chartInterval="day"
       />
     );
     chartSpies.reset.mockClear();
@@ -157,7 +157,7 @@ describe("시장 차트 확대와 이동", () => {
           { species: "금태", status: "선", price: 23000 },
           { species: "양태", status: "선", price: 5000 }
         ]}
-        chartInterval="daily"
+        chartInterval="day"
       />
     );
 
