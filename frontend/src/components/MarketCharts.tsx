@@ -34,6 +34,10 @@ import {
   type CurrentPriceSource
 } from "../currentPriceGuide";
 import {
+  createPriceAxisInteraction,
+  type PriceAxisInteractionController
+} from "../priceViewport";
+import {
   createSmoothWheelZoom,
   type SmoothWheelZoomController
 } from "../wheelZoom";
@@ -77,6 +81,8 @@ export function MarketCharts({
       null
     );
   const wheelZoom = useRef<SmoothWheelZoomController | null>(null);
+  const priceAxisInteraction =
+    useRef<PriceAxisInteractionController | null>(null);
   const volumeMaximum = useMemo(
     () =>
       points.reduce(
@@ -146,6 +152,8 @@ export function MarketCharts({
       }
       wheelZoom.current?.destroy();
       wheelZoom.current = null;
+      priceAxisInteraction.current?.destroy();
+      priceAxisInteraction.current = null;
       marketChart.current = nextChart;
     },
     []
@@ -159,17 +167,24 @@ export function MarketCharts({
     }
 
     wheelZoom.current?.destroy();
+    priceAxisInteraction.current?.destroy();
     const controller = createSmoothWheelZoom(chart, {
       bounds: { min: 0, max: chartLabelCount - 1 },
       minRange: 2,
       step: Math.max(0.75, labelCount * 0.06)
     });
+    const axisController = createPriceAxisInteraction(chart);
     wheelZoom.current = controller;
+    priceAxisInteraction.current = axisController;
 
     return () => {
-      controller.destroy();
       if (wheelZoom.current === controller) {
+        controller.destroy();
         wheelZoom.current = null;
+      }
+      if (priceAxisInteraction.current === axisController) {
+        axisController.destroy();
+        priceAxisInteraction.current = null;
       }
     };
   }, [chartInterval, chartLabelCount, labelCount]);

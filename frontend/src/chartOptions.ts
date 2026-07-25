@@ -69,9 +69,14 @@ export const createMarketChartOptions = (
             min: 0,
             max: extendedLastLabelIndex,
             minRange: 2
-          }
+          },
+          volume: { min: "original", max: "original" }
         },
-        pan: { enabled: true, mode: "x", threshold: 10 },
+        pan: {
+          enabled: true,
+          mode: "x",
+          threshold: 10
+        },
         zoom: {
           wheel: { enabled: false },
           pinch: { enabled: true },

@@ -21,12 +21,24 @@ const smoothZoomSpies = vi.hoisted(() => ({
   zoom: vi.fn()
 }));
 
+const priceViewportSpies = vi.hoisted(() => ({
+  create: vi.fn(),
+  destroy: vi.fn()
+}));
+
 vi.mock("chartjs-plugin-zoom", () => ({
   default: { id: "zoom" }
 }));
 
 vi.mock("../wheelZoom", () => ({
   createSmoothWheelZoom: () => smoothZoomSpies
+}));
+
+vi.mock("../priceViewport", () => ({
+  createPriceAxisInteraction: (chart: unknown) => {
+    priceViewportSpies.create(chart);
+    return { destroy: priceViewportSpies.destroy };
+  }
 }));
 
 vi.mock("react-chartjs-2", async () => {
@@ -68,14 +80,19 @@ describe("시장 차트 확대와 이동", () => {
     expect(ChartJS.registry.getController("bar")).toBeDefined();
   });
 
-  it("플러그인 휠 배율은 끄고 핀치와 드래그 이동 설정을 유지한다", () => {
-    const options = createMarketChartOptions("dark", 1, 5);
+  it("본문 X축 이동과 별개로 가격축 interaction을 사용한다", () => {
+    const options = createMarketChartOptions("dark", 1, 5, []);
     const zoom = options.plugins?.zoom;
 
     expect(zoom?.pan).toMatchObject({
       enabled: true,
       mode: "x",
       threshold: 10
+    });
+    expect(zoom?.pan).not.toHaveProperty("scaleMode");
+    expect(zoom?.limits?.volume).toEqual({
+      min: "original",
+      max: "original"
     });
     expect(zoom?.zoom?.wheel).toMatchObject({
       enabled: false
@@ -234,5 +251,34 @@ describe("시장 차트 확대와 이동", () => {
 
     unmount();
     expect(chartSpies.unmounted).toHaveBeenCalledTimes(1);
+  });
+
+  it("차트 lifecycle에 가격축 interaction을 한 번 연결하고 해제한다", () => {
+    priceViewportSpies.create.mockClear();
+    priceViewportSpies.destroy.mockClear();
+    const { rerender, unmount } = render(
+      <MarketCharts
+        points={points}
+        volumeMetric="quantity"
+        theme="dark"
+        currentPrices={[]}
+        chartInterval="day"
+      />
+    );
+
+    expect(priceViewportSpies.create).toHaveBeenCalledTimes(1);
+    rerender(
+      <MarketCharts
+        points={points}
+        volumeMetric="quantity"
+        theme="light"
+        currentPrices={[]}
+        chartInterval="day"
+      />
+    );
+    expect(priceViewportSpies.create).toHaveBeenCalledTimes(1);
+
+    unmount();
+    expect(priceViewportSpies.destroy).toHaveBeenCalledTimes(1);
   });
 });
