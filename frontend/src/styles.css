@@ -27,7 +27,6 @@ button:focus-visible {
 
 .app-shell {
   --background: #07101b;
-  --background-glow: #12335b;
   --surface: #0a1522;
   --surface-raised: #0d1928;
   --surface-hover: #10263f;
@@ -41,9 +40,7 @@ button:focus-visible {
   --shadow: #02070d66;
   min-height: 100vh;
   color: var(--text);
-  background:
-    radial-gradient(circle at 25% -10%, var(--background-glow), transparent 34rem),
-    var(--background);
+  background: var(--background);
   transition:
     color 180ms ease,
     background 180ms ease;
@@ -63,6 +60,9 @@ button:focus-visible {
   --blue-soft: #e6f1ff;
   --blue-active: #1474e5;
   --shadow: #34405414;
+  background:
+    radial-gradient(circle at 25% -10%, var(--background-glow), transparent 34rem),
+    var(--background);
 }
 
 .topbar {
