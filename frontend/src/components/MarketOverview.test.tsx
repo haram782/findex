@@ -11,7 +11,8 @@ const selectedItems: SpeciesSnapshot[] = [
     status: "선",
     category: "어류",
     priceAvg: 23000,
-    changeRate: -4.2
+    changeRate: -4.2,
+    tradeAmount: 230000
   },
   {
     key: "양태::선",
@@ -19,7 +20,8 @@ const selectedItems: SpeciesSnapshot[] = [
     status: "선",
     category: "어류",
     priceAvg: 5000,
-    changeRate: 1.2
+    changeRate: 1.2,
+    tradeAmount: 50000
   },
   {
     key: "광어::활",
@@ -27,7 +29,8 @@ const selectedItems: SpeciesSnapshot[] = [
     status: "활",
     category: "어류",
     priceAvg: 18000,
-    changeRate: 2
+    changeRate: 2,
+    tradeAmount: 180000
   }
 ];
 

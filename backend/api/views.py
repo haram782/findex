@@ -228,6 +228,7 @@ class SnapshotView(APIView):
                     "price_avg": _rounded_price(average),
                     "change_rate": change_rate,
                     "quantity": _number(quantity),
+                    "trade_value": _number(trade_amount),
                 }
             )
         results.sort(

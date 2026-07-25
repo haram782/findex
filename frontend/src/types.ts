@@ -18,6 +18,7 @@ export interface SpeciesSnapshot extends CatalogItem {
   key: string;
   priceAvg: number | null;
   changeRate: number | null;
+  tradeAmount: number;
 }
 
 export interface TimeSeriesPoint extends SpeciesSelection {

@@ -57,4 +57,35 @@ describe("대시보드 API 클라이언트", () => {
       dashboardApi.getSnapshots(new AbortController().signal)
     ).rejects.toThrow("시세 정보를 불러오지 못했습니다");
   });
+
+  it("snapshot의 거래대금을 시세표 모델로 정규화한다", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          results: [
+            {
+              species: "광어",
+              status: "활",
+              category: "fish",
+              price_avg: 19000,
+              change_rate: -2.4,
+              trade_value: 190000
+            }
+          ]
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      )
+    );
+
+    const result = await dashboardApi.getSnapshots(
+      new AbortController().signal
+    );
+
+    expect(result[0]).toMatchObject({
+      species: "광어",
+      priceAvg: 19000,
+      changeRate: -2.4,
+      tradeAmount: 190000
+    });
+  });
 });

@@ -124,6 +124,7 @@ def test_snapshot_compares_with_previous_trading_day():
     assert body["previous_date"] == "2026-07-24"
     assert body["results"][0]["price_avg"] == 17500
     assert body["results"][0]["change_rate"] == 118.75
+    assert body["results"][0]["trade_value"] == 70000
 
 
 @pytest.mark.django_db

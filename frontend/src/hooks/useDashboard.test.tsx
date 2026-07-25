@@ -37,7 +37,8 @@ describe("대시보드 데이터 훅", () => {
         status: "활",
         category: "어류",
         priceAvg: 18000,
-        changeRate: -2.4
+        changeRate: -2.4,
+        tradeAmount: 180000
       }
     ]);
   });

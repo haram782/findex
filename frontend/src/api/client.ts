@@ -57,7 +57,8 @@ const normalizeSnapshot = (item: ApiObject): SpeciesSnapshot => {
     ...normalizeCatalog(item),
     key: `${species}::${status}`,
     priceAvg: numberOrNull(item.price_avg),
-    changeRate: numberOrNull(item.change_rate)
+    changeRate: numberOrNull(item.change_rate),
+    tradeAmount: requiredNumber(item.trade_amount ?? item.trade_value)
   };
 };
 
