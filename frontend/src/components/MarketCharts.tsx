@@ -13,7 +13,10 @@ import {
 import zoomPlugin from "chartjs-plugin-zoom";
 import { useEffect, useMemo, useRef } from "react";
 import { Chart } from "react-chartjs-2";
-import { buildMarketChartData } from "../chartData";
+import {
+  buildMarketChartData,
+  type MarketChartPoint
+} from "../chartData";
 import {
   createMarketChartOptions,
   getZoomPadding
@@ -22,6 +25,10 @@ import {
   createCurrentPriceGuide,
   getCurrentPriceColor
 } from "../currentPriceGuide";
+import {
+  createSmoothWheelZoom,
+  type SmoothWheelZoomController
+} from "../wheelZoom";
 import type {
   ChartInterval,
   Theme,
@@ -59,7 +66,11 @@ export function MarketCharts({
   currentChangeRate,
   chartInterval
 }: MarketChartsProps) {
-  const marketChart = useRef<ChartJS<"line" | "bar"> | null>(null);
+  const marketChart =
+    useRef<ChartJS<"line" | "bar", MarketChartPoint[], string> | null>(
+      null
+    );
+  const wheelZoom = useRef<SmoothWheelZoomController | null>(null);
   const volumeMaximum = useMemo(
     () =>
       points.reduce(
@@ -72,10 +83,6 @@ export function MarketCharts({
     () => new Set(points.map((point) => point.date)).size,
     [points]
   );
-  const options = useMemo(
-    () => createMarketChartOptions(theme, volumeMaximum, labelCount),
-    [labelCount, theme, volumeMaximum]
-  );
   const zoomPadding = getZoomPadding(labelCount);
   const data = useMemo(
     () =>
@@ -87,6 +94,21 @@ export function MarketCharts({
       ),
     [chartInterval, points, volumeMetric, zoomPadding]
   );
+  const chartLabelCount = data.labels?.length ?? 0;
+  const dateLabels = useMemo(
+    () => (data.labels ?? []).map(String),
+    [data.labels]
+  );
+  const options = useMemo(
+    () =>
+      createMarketChartOptions(
+        theme,
+        volumeMaximum,
+        labelCount,
+        dateLabels
+      ),
+    [dateLabels, labelCount, theme, volumeMaximum]
+  );
   const plugins = useMemo(
     () => [
       createCurrentPriceGuide(
@@ -97,11 +119,39 @@ export function MarketCharts({
     ],
     [currentChangeRate, currentPrice, theme]
   );
-  const changeZoom = (factor: number) =>
-    marketChart.current?.zoom({ x: factor });
-  const resetZoom = () => marketChart.current?.resetZoom();
+  const changeZoom = (deltaY: number) => wheelZoom.current?.zoom(deltaY);
+  const resetZoom = () => {
+    wheelZoom.current?.reset();
+    marketChart.current?.resetZoom();
+  };
 
   useEffect(() => {
+    const chart = marketChart.current;
+    if (!chart || chartLabelCount === 0) {
+      return;
+    }
+
+    wheelZoom.current = createSmoothWheelZoom(chart, {
+      bounds: { min: 0, max: chartLabelCount - 1 },
+      minRange: 2,
+      step: Math.max(0.75, labelCount * 0.06)
+    });
+
+    return () => {
+      wheelZoom.current?.destroy();
+      wheelZoom.current = null;
+    };
+  }, [
+    chartInterval,
+    chartLabelCount,
+    currentChangeRate,
+    currentPrice,
+    labelCount,
+    theme
+  ]);
+
+  useEffect(() => {
+    wheelZoom.current?.reset();
     marketChart.current?.resetZoom();
   }, [points]);
 
@@ -117,10 +167,10 @@ export function MarketCharts({
           </strong>
         )}
         <span>휠로 천천히 확대 · 드래그로 이동</span>
-        <button aria-label="차트 확대" onClick={() => changeZoom(1.1)}>
+        <button aria-label="차트 확대" onClick={() => changeZoom(-100)}>
           +
         </button>
-        <button aria-label="차트 축소" onClick={() => changeZoom(0.9)}>
+        <button aria-label="차트 축소" onClick={() => changeZoom(100)}>
           −
         </button>
         <button onClick={resetZoom}>초기화</button>

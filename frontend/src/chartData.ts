@@ -13,6 +13,11 @@ const INTERVAL_DAYS: Record<ChartInterval, number> = {
   twentyDay: 20
 };
 
+export interface MarketChartPoint {
+  x: number;
+  y: number | null;
+}
+
 export const getSeriesKey = (point: TimeSeriesPoint): string =>
   `${point.species}::${point.status}::${point.group ?? ""}`;
 
@@ -128,7 +133,7 @@ export function buildMarketChartData(
   metric: VolumeMetric,
   datePadding = 0,
   chartInterval: ChartInterval = "daily"
-): ChartData<"line" | "bar", (number | null)[], string> {
+): ChartData<"line" | "bar", MarketChartPoint[], string> {
   if (points.length === 0) {
     return { labels: [], datasets: [] };
   }
@@ -157,42 +162,48 @@ export function buildMarketChartData(
       }))
     ];
   const labels = (price.labels ?? []).map(String);
-  if (datePadding === 0) {
-    return { labels, datasets };
+  let outputLabels = labels;
+  if (datePadding > 0) {
+    const timestamps = labels.map((label) => Date.parse(label));
+    const validTimestamps = timestamps.every(Number.isFinite);
+    const interval =
+      INTERVAL_DAYS[chartInterval] * DAY_IN_MILLISECONDS;
+    const formatDate = (timestamp: number): string =>
+      new Date(timestamp).toISOString().slice(0, 10);
+    const before = validTimestamps
+      ? Array.from({ length: datePadding }, (_, index) =>
+          formatDate(
+            timestamps[0] - (datePadding - index) * interval
+          )
+        )
+      : Array<string>(datePadding).fill("");
+    const after = validTimestamps
+      ? Array.from({ length: datePadding }, (_, index) =>
+          formatDate(
+            timestamps[timestamps.length - 1] + (index + 1) * interval
+          )
+        )
+      : Array<string>(datePadding).fill("");
+
+    outputLabels = [...before, ...labels, ...after];
   }
 
-  const timestamps = labels.map((label) => Date.parse(label));
-  const validTimestamps = timestamps.every(Number.isFinite);
-  const interval =
-    INTERVAL_DAYS[chartInterval] * DAY_IN_MILLISECONDS;
-  const formatDate = (timestamp: number): string =>
-    new Date(timestamp).toISOString().slice(0, 10);
-  const before = validTimestamps
-    ? Array.from({ length: datePadding }, (_, index) =>
-        formatDate(
-          timestamps[0] - (datePadding - index) * interval
-        )
-      )
-    : Array<string>(datePadding).fill("");
-  const after = validTimestamps
-    ? Array.from({ length: datePadding }, (_, index) =>
-        formatDate(
-          timestamps[timestamps.length - 1] + (index + 1) * interval
-        )
-      )
-    : Array<string>(datePadding).fill("");
-
   return {
-    labels: [...before, ...labels, ...after],
+    labels: outputLabels,
     datasets: datasets.map((dataset) => {
       const emptyValue = dataset.type === "bar" ? 0 : null;
+      const values =
+        datePadding > 0
+          ? [
+              ...Array<number | null>(datePadding).fill(emptyValue),
+              ...dataset.data,
+              ...Array<number | null>(datePadding).fill(emptyValue)
+            ]
+          : dataset.data;
+
       return {
         ...dataset,
-        data: [
-          ...Array<number | null>(datePadding).fill(emptyValue),
-          ...dataset.data,
-          ...Array<number | null>(datePadding).fill(emptyValue)
-        ]
+        data: values.map((value, x) => ({ x, y: value }))
       };
     })
   };

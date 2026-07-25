@@ -97,7 +97,10 @@ describe("차트 데이터 변환", () => {
       type: "bar",
       yAxisID: "volume",
       label: "활 광어 · 제주 · 수량",
-      data: [12, 10]
+      data: [
+        { x: 0, y: 12 },
+        { x: 1, y: 10 }
+      ]
     });
   });
 
@@ -113,14 +116,21 @@ describe("차트 데이터 변환", () => {
       "2026-07-27"
     ]);
     expect(chart.datasets[0].data).toEqual([
-      null,
-      null,
-      18000,
-      19000,
-      null,
-      null
+      { x: 0, y: null },
+      { x: 1, y: null },
+      { x: 2, y: 18000 },
+      { x: 3, y: 19000 },
+      { x: 4, y: null },
+      { x: 5, y: null }
     ]);
-    expect(chart.datasets[6].data).toEqual([0, 0, 12, 10, 0, 0]);
+    expect(chart.datasets[6].data).toEqual([
+      { x: 0, y: 0 },
+      { x: 1, y: 0 },
+      { x: 2, y: 12 },
+      { x: 3, y: 10 },
+      { x: 4, y: 0 },
+      { x: 5, y: 0 }
+    ]);
   });
 
   it("단일 주봉에서도 주 단위 날짜 여백을 유지한다", () => {

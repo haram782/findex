@@ -2,11 +2,19 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Chart as ChartJS } from "chart.js";
 import { describe, expect, it, vi } from "vitest";
-import { createMarketChartOptions } from "../chartOptions";
+import {
+  createMarketChartOptions,
+  getDateTickLabel
+} from "../chartOptions";
 import type { TimeSeriesPoint } from "../types";
 import { MarketCharts } from "./MarketCharts";
 
 const chartSpies = vi.hoisted(() => ({
+  reset: vi.fn()
+}));
+
+const smoothZoomSpies = vi.hoisted(() => ({
+  destroy: vi.fn(),
   reset: vi.fn(),
   zoom: vi.fn()
 }));
@@ -15,14 +23,17 @@ vi.mock("chartjs-plugin-zoom", () => ({
   default: { id: "zoom" }
 }));
 
+vi.mock("../wheelZoom", () => ({
+  createSmoothWheelZoom: () => smoothZoomSpies
+}));
+
 vi.mock("react-chartjs-2", async () => {
   const React = await import("react");
   return {
     Chart: React.forwardRef<unknown, Record<string, unknown>>(
       (_props, ref) => {
         React.useImperativeHandle(ref, () => ({
-          resetZoom: chartSpies.reset,
-          zoom: chartSpies.zoom
+          resetZoom: chartSpies.reset
         }));
         return React.createElement("div", { "data-testid": "market-chart" });
       }
@@ -50,7 +61,7 @@ describe("시장 차트 확대와 이동", () => {
     expect(ChartJS.registry.getController("bar")).toBeDefined();
   });
 
-  it("가로축 휠 확대, 핀치, 드래그 이동 설정을 유지한다", () => {
+  it("플러그인 휠 배율은 끄고 핀치와 드래그 이동 설정을 유지한다", () => {
     const options = createMarketChartOptions("dark", 1, 5);
     const zoom = options.plugins?.zoom;
 
@@ -60,8 +71,7 @@ describe("시장 차트 확대와 이동", () => {
       threshold: 10
     });
     expect(zoom?.zoom?.wheel).toMatchObject({
-      enabled: true,
-      speed: 0.03
+      enabled: false
     });
     expect(zoom?.zoom?.pinch).toMatchObject({ enabled: true });
     expect(zoom?.zoom?.mode).toBe("x");
@@ -75,10 +85,25 @@ describe("시장 차트 확대와 이동", () => {
       axis: "y",
       position: "left"
     });
-    expect(options.scales?.x).toMatchObject({ min: 3, max: 7 });
+    expect(options.scales?.x).toMatchObject({
+      type: "linear",
+      min: 3,
+      max: 7
+    });
     expect(options.scales?.volume).toMatchObject({ axis: "y" });
     expect(options.scales?.x?.ticks?.font).toMatchObject({ size: 12 });
+    expect(
+      (options.scales?.x?.ticks as { stepSize?: number })?.stepSize
+    ).toBe(1);
     expect(options.scales?.price?.ticks?.font).toMatchObject({ size: 12 });
+  });
+
+  it("선형 축의 정수 위치에만 날짜 라벨을 표시한다", () => {
+    const labels = ["2026-07-20", "2026-07-21"];
+
+    expect(getDateTickLabel(0, labels)).toBe("2026-07-20");
+    expect(getDateTickLabel(0.5, labels)).toBe("");
+    expect(getDateTickLabel(2, labels)).toBe("");
   });
 
   it("단일 통합 차트에 확대, 축소, 초기화를 적용한다", async () => {
@@ -94,6 +119,8 @@ describe("시장 차트 확대와 이동", () => {
       />
     );
     chartSpies.reset.mockClear();
+    smoothZoomSpies.reset.mockClear();
+    smoothZoomSpies.zoom.mockClear();
 
     await user.click(screen.getByRole("button", { name: "차트 확대" }));
     await user.click(screen.getByRole("button", { name: "차트 축소" }));
@@ -101,8 +128,9 @@ describe("시장 차트 확대와 이동", () => {
 
     expect(screen.getByTestId("market-chart")).toBeVisible();
     expect(screen.queryByTestId("volume-chart")).not.toBeInTheDocument();
-    expect(chartSpies.zoom).toHaveBeenNthCalledWith(1, { x: 1.1 });
-    expect(chartSpies.zoom).toHaveBeenNthCalledWith(2, { x: 0.9 });
+    expect(smoothZoomSpies.zoom).toHaveBeenNthCalledWith(1, -100);
+    expect(smoothZoomSpies.zoom).toHaveBeenNthCalledWith(2, 100);
+    expect(smoothZoomSpies.reset).toHaveBeenCalledOnce();
     expect(chartSpies.reset).toHaveBeenCalledOnce();
   });
 
