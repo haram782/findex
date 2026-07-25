@@ -12,6 +12,18 @@ interface SpeciesSidebarProps {
 const formatPrice = (value: number | null): string =>
   value === null ? "-" : `${Math.round(value).toLocaleString("ko-KR")}원`;
 
+function FishIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      data-testid="fish-icon"
+      viewBox="0 0 24 24"
+    >
+      <path d="M21 12c-2.2-3.2-5.4-5.2-9-5.2-2.7 0-5.2 1.1-7.1 3L1.5 7.7v8.6l3.4-2.1c1.9 1.9 4.4 3 7.1 3 3.6 0 6.8-2 9-5.2Zm-5.1-1.4a1.2 1.2 0 1 1 0 2.4 1.2 1.2 0 0 1 0-2.4Z" />
+    </svg>
+  );
+}
+
 export function SpeciesSidebar({
   items,
   selectedKeys,
@@ -65,7 +77,7 @@ export function SpeciesSidebar({
             setCategory("전체");
           }}
         >
-          즐겨찾기
+          관심어종
         </button>
       </div>
       <div className="category-tabs" role="tablist" aria-label="어종 카테고리">
@@ -121,11 +133,11 @@ export function SpeciesSidebar({
               </button>
               <button
                 className={`favorite-button ${favorite ? "active" : ""}`}
-                aria-label={`${item.species} 즐겨찾기 ${favorite ? "제거" : "추가"}`}
+                aria-label={`${item.species} 관심어종 ${favorite ? "제거" : "추가"}`}
                 aria-pressed={favorite}
                 onClick={() => onFavoriteToggle(item.key)}
               >
-                {favorite ? "★" : "☆"}
+                <FishIcon />
               </button>
             </div>
           );
@@ -133,7 +145,7 @@ export function SpeciesSidebar({
         {filtered.length === 0 && (
           <p className="empty-sidebar">
             {view === "favorites"
-              ? "즐겨찾기한 어종이 없습니다."
+              ? "관심어종으로 등록한 어종이 없습니다."
               : "표시할 시세가 없습니다."}
           </p>
         )}

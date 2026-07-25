@@ -77,7 +77,7 @@ describe("어종 사이드바", () => {
     ).toHaveClass("negative");
   });
 
-  it("별 버튼으로 즐겨찾기를 바꾸고 즐겨찾기만 표시한다", async () => {
+  it("생선 버튼으로 관심어종을 바꾸고 관심어종만 표시한다", async () => {
     const user = userEvent.setup();
     const onFavoriteToggle = vi.fn();
     render(
@@ -91,11 +91,14 @@ describe("어종 사이드바", () => {
     );
 
     await user.click(screen.getByRole("tab", { name: "패류" }));
-    await user.click(screen.getByRole("button", { name: "전복 즐겨찾기 추가" }));
+    await user.click(screen.getByRole("button", { name: "전복 관심어종 추가" }));
     expect(onFavoriteToggle).toHaveBeenCalledWith("전복::활");
 
-    await user.click(screen.getByRole("tab", { name: "즐겨찾기" }));
+    await user.click(screen.getByRole("tab", { name: "관심어종" }));
     expect(screen.getByText("광어")).toBeInTheDocument();
     expect(screen.queryByText("전복")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "광어 관심어종 제거" })
+    ).toContainElement(screen.getByTestId("fish-icon"));
   });
 });

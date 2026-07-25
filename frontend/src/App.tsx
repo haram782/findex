@@ -189,6 +189,7 @@ export default function App() {
                 points={chartPoints}
                 volumeMetric={volumeMetric}
                 theme={theme}
+                currentPrice={selectedItems[0]?.priceAvg ?? null}
               />
             </div>
           )}

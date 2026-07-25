@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildBarChartData,
+  buildMarketChartData,
   buildPriceChartData,
   getSeriesKey
 } from "./chartData";
@@ -74,9 +75,31 @@ describe("차트 데이터 변환", () => {
     expect(getSeriesKey(points[0])).toBe("광어::활::제주");
   });
 
+  it("가격선과 거래량 막대를 동일한 날짜 축 데이터로 통합한다", () => {
+    const chart = buildMarketChartData(points, "quantity");
+
+    expect(chart.labels).toEqual(["2026-07-24", "2026-07-25"]);
+    expect(chart.datasets).toHaveLength(8);
+    expect(chart.datasets[0]).toMatchObject({
+      type: "line",
+      yAxisID: "price",
+      label: "활 광어 · 제주 · 평균가"
+    });
+    expect(chart.datasets[6]).toMatchObject({
+      type: "bar",
+      yAxisID: "volume",
+      label: "활 광어 · 제주 · 수량",
+      data: [12, 10]
+    });
+  });
+
   it("데이터가 없으면 빈 차트 구조를 반환한다", () => {
     expect(buildPriceChartData([])).toEqual({ labels: [], datasets: [] });
     expect(buildBarChartData([], "quantity")).toEqual({
+      labels: [],
+      datasets: []
+    });
+    expect(buildMarketChartData([], "quantity")).toEqual({
       labels: [],
       datasets: []
     });

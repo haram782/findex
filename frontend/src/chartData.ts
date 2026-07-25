@@ -110,3 +110,39 @@ export function buildBarChartData(
 
   return { labels, datasets };
 }
+
+export function buildMarketChartData(
+  points: TimeSeriesPoint[],
+  metric: VolumeMetric
+): ChartData<"line" | "bar", (number | null)[], string> {
+  if (points.length === 0) {
+    return { labels: [], datasets: [] };
+  }
+  const price = buildPriceChartData(points);
+  const volume = buildBarChartData(points, metric);
+
+  return {
+    labels: price.labels,
+    datasets: [
+      ...price.datasets.map((dataset) => ({
+        ...dataset,
+        type: "line" as const,
+        yAxisID: "price",
+        order: 1
+      })),
+      ...volume.datasets.map((dataset) => ({
+        ...dataset,
+        type: "bar" as const,
+        yAxisID: "volume",
+        order: 2,
+        backgroundColor:
+          typeof dataset.backgroundColor === "string"
+            ? dataset.backgroundColor.replace(/99$/, "55")
+            : dataset.backgroundColor,
+        borderWidth: 0,
+        barPercentage: 0.62,
+        categoryPercentage: 0.74
+      }))
+    ]
+  };
+}
