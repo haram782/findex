@@ -22,7 +22,9 @@ export interface SmoothWheelZoomController {
 }
 
 interface ZoomChart {
-  canvas: HTMLCanvasElement;
+  canvas: HTMLCanvasElement | null;
+  ctx?: CanvasRenderingContext2D | null;
+  attached?: boolean;
   chartArea: {
     left: number;
     width: number;
@@ -111,10 +113,25 @@ export function createSmoothWheelZoom(
   scheduler: AnimationScheduler = browserScheduler
 ): SmoothWheelZoomController {
   const canvas = chart.canvas;
+  if (!canvas) {
+    return {
+      zoom: () => undefined,
+      reset: () => undefined,
+      destroy: () => undefined
+    };
+  }
+
   const duration = options.duration ?? 90;
   let frame: number | null = null;
   let lastTimestamp: number | null = null;
   let target: ZoomWindow | null = null;
+  let destroyed = false;
+
+  const isChartActive = () =>
+    !destroyed &&
+    chart.canvas === canvas &&
+    chart.ctx !== null &&
+    chart.attached !== false;
 
   const stopAnimation = () => {
     if (frame !== null) {
@@ -126,6 +143,11 @@ export function createSmoothWheelZoom(
   };
 
   const animate = (timestamp: number) => {
+    if (!isChartActive()) {
+      stopAnimation();
+      return;
+    }
+
     const scale = chart.scales.x;
     if (!scale || !target) {
       stopAnimation();
@@ -157,6 +179,10 @@ export function createSmoothWheelZoom(
   };
 
   const zoom = (deltaY: number, focalRatio = 0.5) => {
+    if (!isChartActive()) {
+      return;
+    }
+
     const scale = chart.scales.x;
     if (!scale) {
       return;
@@ -182,7 +208,7 @@ export function createSmoothWheelZoom(
   };
 
   const handleWheel = (event: WheelEvent) => {
-    if (event.deltaY === 0) {
+    if (event.deltaY === 0 || !isChartActive()) {
       return;
     }
     event.preventDefault();
@@ -208,6 +234,10 @@ export function createSmoothWheelZoom(
     zoom,
     reset: stopAnimation,
     destroy: () => {
+      if (destroyed) {
+        return;
+      }
+      destroyed = true;
       canvas.removeEventListener("wheel", handleWheel);
       canvas.removeEventListener("pointerdown", stopAnimation);
       stopAnimation();

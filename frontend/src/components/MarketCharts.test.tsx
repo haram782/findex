@@ -10,7 +10,9 @@ import type { TimeSeriesPoint } from "../types";
 import { MarketCharts } from "./MarketCharts";
 
 const chartSpies = vi.hoisted(() => ({
-  reset: vi.fn()
+  reset: vi.fn(),
+  mounted: vi.fn(),
+  unmounted: vi.fn()
 }));
 
 const smoothZoomSpies = vi.hoisted(() => ({
@@ -32,6 +34,10 @@ vi.mock("react-chartjs-2", async () => {
   return {
     Chart: React.forwardRef<unknown, Record<string, unknown>>(
       (_props, ref) => {
+        React.useEffect(() => {
+          chartSpies.mounted();
+          return () => chartSpies.unmounted();
+        }, []);
         React.useImperativeHandle(ref, () => ({
           resetZoom: chartSpies.reset
         }));
@@ -162,5 +168,39 @@ describe("시장 차트 확대와 이동", () => {
     );
 
     expect(screen.queryByText(/현재가/)).not.toBeInTheDocument();
+  });
+
+  it("현재가와 테마가 바뀌어도 차트 캔버스를 다시 마운트하지 않는다", () => {
+    chartSpies.mounted.mockClear();
+    chartSpies.unmounted.mockClear();
+    const { rerender, unmount } = render(
+      <MarketCharts
+        points={points}
+        volumeMetric="tradeAmount"
+        theme="dark"
+        currentPrices={[
+          { species: "금태", status: "선", price: 23000 }
+        ]}
+        chartInterval="day"
+      />
+    );
+
+    rerender(
+      <MarketCharts
+        points={points}
+        volumeMetric="tradeAmount"
+        theme="light"
+        currentPrices={[
+          { species: "금태", status: "선", price: 24000 }
+        ]}
+        chartInterval="day"
+      />
+    );
+
+    expect(chartSpies.mounted).toHaveBeenCalledTimes(1);
+    expect(chartSpies.unmounted).not.toHaveBeenCalled();
+
+    unmount();
+    expect(chartSpies.unmounted).toHaveBeenCalledTimes(1);
   });
 });

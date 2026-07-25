@@ -11,7 +11,13 @@ import {
   Tooltip
 } from "chart.js";
 import zoomPlugin from "chartjs-plugin-zoom";
-import { useEffect, useMemo, useRef } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef
+} from "react";
 import { Chart } from "react-chartjs-2";
 import {
   buildMarketChartData,
@@ -24,6 +30,7 @@ import {
 import {
   buildCurrentPriceGuides,
   createCurrentPriceGuide,
+  type CurrentPriceGuide,
   type CurrentPriceSource
 } from "../currentPriceGuide";
 import {
@@ -112,12 +119,36 @@ export function MarketCharts({
     () => buildCurrentPriceGuides(currentPrices, data.datasets),
     [currentPrices, data.datasets]
   );
-  const guideKey = currentPriceGuides
-    .map(({ price, color }) => `${price}:${color}`)
-    .join("|");
+  const currentPriceGuideState = useMemo(() => {
+    const state: { guides: CurrentPriceGuide[] } = { guides: [] };
+    return {
+      plugin: createCurrentPriceGuide(() => state.guides),
+      update: (guides: CurrentPriceGuide[]) => {
+        state.guides = guides;
+      }
+    };
+  }, []);
   const plugins = useMemo(
-    () => [createCurrentPriceGuide(() => currentPriceGuides)],
-    [currentPriceGuides]
+    () => [currentPriceGuideState.plugin],
+    [currentPriceGuideState]
+  );
+  const attachMarketChart = useCallback(
+    (
+      chart: ChartJS<
+        "line" | "bar",
+        MarketChartPoint[],
+        string
+      > | null | undefined
+    ) => {
+      const nextChart = chart ?? null;
+      if (marketChart.current === nextChart) {
+        return;
+      }
+      wheelZoom.current?.destroy();
+      wheelZoom.current = null;
+      marketChart.current = nextChart;
+    },
+    []
   );
   const changeZoom = (deltaY: number) => wheelZoom.current?.zoom(deltaY);
 
@@ -127,27 +158,44 @@ export function MarketCharts({
       return;
     }
 
-    wheelZoom.current = createSmoothWheelZoom(chart, {
+    wheelZoom.current?.destroy();
+    const controller = createSmoothWheelZoom(chart, {
       bounds: { min: 0, max: chartLabelCount - 1 },
       minRange: 2,
       step: Math.max(0.75, labelCount * 0.06)
     });
+    wheelZoom.current = controller;
 
     return () => {
-      wheelZoom.current?.destroy();
-      wheelZoom.current = null;
+      controller.destroy();
+      if (wheelZoom.current === controller) {
+        wheelZoom.current = null;
+      }
     };
-  }, [
-    chartInterval,
-    chartLabelCount,
-    guideKey,
-    labelCount,
-    theme
-  ]);
+  }, [chartInterval, chartLabelCount, labelCount]);
+
+  useLayoutEffect(() => {
+    currentPriceGuideState.update(currentPriceGuides);
+    const chart = marketChart.current;
+    if (
+      chart?.canvas &&
+      chart.ctx &&
+      chart.attached !== false
+    ) {
+      chart.draw();
+    }
+  }, [currentPriceGuideState, currentPriceGuides]);
 
   useEffect(() => {
     wheelZoom.current?.reset();
-    marketChart.current?.resetZoom();
+    const chart = marketChart.current;
+    if (
+      chart?.canvas &&
+      chart.ctx &&
+      chart.attached !== false
+    ) {
+      chart.resetZoom();
+    }
   }, [points]);
 
   return (
@@ -165,8 +213,7 @@ export function MarketCharts({
       <div className="chart-stack">
         <section className="chart-panel market-chart">
           <Chart
-            key={`${theme}-${guideKey}`}
-            ref={marketChart}
+            ref={attachMarketChart}
             type="bar"
             data={data}
             options={options}

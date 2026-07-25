@@ -135,4 +135,70 @@ describe("고정 단계 휠 줌", () => {
     ).canvas = null;
     expect(() => controller.destroy()).not.toThrow();
   });
+
+  it("예약 프레임 전에 차트 캔버스가 해제되면 확대를 중단한다", () => {
+    const canvas = document.createElement("canvas");
+    const scale = { min: 5, max: 25 };
+    const zoomScale = vi.fn();
+    const chart = {
+      canvas,
+      chartArea: { left: 0, width: 400 },
+      scales: { x: scale },
+      zoomScale
+    } as unknown as Parameters<typeof createSmoothWheelZoom>[0];
+    const callbacks: FrameRequestCallback[] = [];
+    const scheduler = {
+      cancel: vi.fn(),
+      request: (callback: FrameRequestCallback) => {
+        callbacks.push(callback);
+        return callbacks.length;
+      }
+    };
+    const controller = createSmoothWheelZoom(
+      chart,
+      { bounds, duration: 90, minRange: 2, step: 2 },
+      scheduler
+    );
+
+    controller.zoom(-100);
+    callbacks.shift()?.(16);
+    (
+      chart as unknown as {
+        canvas: HTMLCanvasElement | null;
+      }
+    ).canvas = null;
+    callbacks.shift()?.(32);
+
+    expect(zoomScale).not.toHaveBeenCalled();
+    expect(callbacks).toHaveLength(0);
+    controller.destroy();
+  });
+
+  it("차트 컨텍스트가 해제된 뒤의 입력과 중복 해제를 무시한다", () => {
+    const canvas = document.createElement("canvas");
+    const scheduler = {
+      cancel: vi.fn(),
+      request: vi.fn(() => 23)
+    };
+    const chart = {
+      canvas,
+      ctx: null,
+      chartArea: { left: 0, width: 400 },
+      scales: { x: { min: 5, max: 25 } },
+      zoomScale: vi.fn()
+    } as unknown as Parameters<typeof createSmoothWheelZoom>[0];
+    const controller = createSmoothWheelZoom(
+      chart,
+      { bounds, minRange: 2, step: 2 },
+      scheduler
+    );
+
+    controller.zoom(-100);
+    controller.reset();
+    controller.destroy();
+    controller.destroy();
+
+    expect(scheduler.request).not.toHaveBeenCalled();
+    expect(chart.zoomScale).not.toHaveBeenCalled();
+  });
 });
