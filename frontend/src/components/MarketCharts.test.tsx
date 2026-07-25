@@ -81,6 +81,7 @@ describe("시장 차트 확대와 이동", () => {
       minRange: 2
     });
     expect(options.layout?.padding).toMatchObject({ right: 72 });
+    expect(options.animation).toBe(false);
     expect(options.scales?.price).toMatchObject({
       axis: "y",
       position: "left"
@@ -106,15 +107,20 @@ describe("시장 차트 확대와 이동", () => {
     expect(getDateTickLabel(2, labels)).toBe("");
   });
 
-  it("단일 통합 차트에 확대, 축소, 초기화를 적용한다", async () => {
+  it("단일 통합 차트에 정렬된 확대·축소 버튼만 표시한다", async () => {
     const user = userEvent.setup();
     render(
       <MarketCharts
         points={points}
         volumeMetric="tradeAmount"
         theme="dark"
-        currentPrice={23000}
-        currentChangeRate={-4.2}
+        currentPrices={[
+          {
+            species: "금태",
+            status: "선",
+            price: 23000
+          }
+        ]}
         chartInterval="daily"
       />
     );
@@ -124,17 +130,17 @@ describe("시장 차트 확대와 이동", () => {
 
     await user.click(screen.getByRole("button", { name: "차트 확대" }));
     await user.click(screen.getByRole("button", { name: "차트 축소" }));
-    await user.click(screen.getByRole("button", { name: "초기화" }));
 
     expect(screen.getByTestId("market-chart")).toBeVisible();
     expect(screen.queryByTestId("volume-chart")).not.toBeInTheDocument();
+    expect(screen.queryByText(/휠로/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "초기화" })).not.toBeInTheDocument();
+    expect(screen.queryByText(/현재가/)).not.toBeInTheDocument();
     expect(smoothZoomSpies.zoom).toHaveBeenNthCalledWith(1, -100);
     expect(smoothZoomSpies.zoom).toHaveBeenNthCalledWith(2, 100);
-    expect(smoothZoomSpies.reset).toHaveBeenCalledOnce();
-    expect(chartSpies.reset).toHaveBeenCalledOnce();
   });
 
-  it("시계열 배열 순서와 무관하게 전달된 대표 현재가를 강조한다", () => {
+  it("시계열 배열 순서와 무관하게 복수 현재가를 전달한다", () => {
     render(
       <MarketCharts
         points={[
@@ -147,14 +153,14 @@ describe("시장 차트 확대와 이동", () => {
         ]}
         volumeMetric="tradeAmount"
         theme="light"
-        currentPrice={23000}
-        currentChangeRate={3.1}
+        currentPrices={[
+          { species: "금태", status: "선", price: 23000 },
+          { species: "양태", status: "선", price: 5000 }
+        ]}
         chartInterval="daily"
       />
     );
 
-    expect(screen.getByText("현재가 23,000원")).toHaveStyle({
-      color: "#ff5874"
-    });
+    expect(screen.queryByText(/현재가/)).not.toBeInTheDocument();
   });
 });

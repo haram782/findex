@@ -6,6 +6,7 @@ import { SpeciesSidebar } from "./components/SpeciesSidebar";
 import { getDateWindow } from "./dateRange";
 import { useDashboard } from "./hooks/useDashboard";
 import { useFavorites, useTheme } from "./hooks/usePreferences";
+import { getSpeciesAliases } from "./speciesKnowledge";
 import type {
   ChartInterval,
   DateRange,
@@ -61,6 +62,22 @@ export default function App() {
   const chartPoints = useMemo(
     () => aggregateTimeSeries(points, chartInterval),
     [chartInterval, points]
+  );
+  const currentPrices = useMemo(
+    () =>
+      selectedItems.map((item) => ({
+        species: item.species,
+        status: item.status,
+        price: item.priceAvg
+      })),
+    [selectedItems]
+  );
+  const primaryAliases = useMemo(
+    () =>
+      selectedItems.length === 1
+        ? getSpeciesAliases(selectedItems[0].species)
+        : [],
+    [selectedItems]
   );
 
   const changeSelection = (key: string, selected: boolean) => {
@@ -189,8 +206,7 @@ export default function App() {
                 points={chartPoints}
                 volumeMetric={volumeMetric}
                 theme={theme}
-                currentPrice={selectedItems[0]?.priceAvg ?? null}
-                currentChangeRate={selectedItems[0]?.changeRate ?? null}
+                currentPrices={currentPrices}
                 chartInterval={chartInterval}
               />
             </div>
@@ -206,6 +222,14 @@ export default function App() {
               <div className="placeholder-card">
                 <strong>{selectedItems[0]?.species ?? "선택 어종"} 정보</strong>
                 <span>검수된 어종 정보가 아직 없습니다.</span>
+                <div className="wiki-aliases">
+                  <small>다른 이름</small>
+                  <b>
+                    {primaryAliases.length > 0
+                      ? primaryAliases.join(", ")
+                      : "등록된 다른 이름 없음"}
+                  </b>
+                </div>
               </div>
             </section>
           )}

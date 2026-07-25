@@ -28,6 +28,7 @@ export const createMarketChartOptions = (
   return {
     responsive: true,
     maintainAspectRatio: false,
+    animation: false,
     layout: { padding: { right: 72 } },
     interaction: { mode: "index", intersect: false },
     plugins: {

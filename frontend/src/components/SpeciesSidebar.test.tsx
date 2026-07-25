@@ -25,6 +25,26 @@ const snapshots: SpeciesSnapshot[] = [
   }
 ];
 
+const otherSnapshot: SpeciesSnapshot = {
+  key: "해삼::선",
+  species: "해삼",
+  status: "선",
+  category: "기타",
+  priceAvg: 12000,
+  changeRate: null,
+  tradeAmount: 500000
+};
+
+const aliasSnapshot: SpeciesSnapshot = {
+  key: "흑점줄전갱이::선",
+  species: "흑점줄전갱이",
+  status: "선",
+  category: "어류",
+  priceAvg: 42000,
+  changeRate: 1.5,
+  tradeAmount: 800000
+};
+
 describe("어종 사이드바", () => {
   it("어종명, 평균가, 전일대비, 거래대금 4열을 표시한다", () => {
     render(
@@ -68,6 +88,55 @@ describe("어종 사이드바", () => {
 
     expect(screen.getByText("전복")).toBeInTheDocument();
     expect(screen.queryByText("광어")).not.toBeInTheDocument();
+  });
+
+  it("기타 카테고리를 마지막에 배치한다", () => {
+    render(
+      <SpeciesSidebar
+        items={[otherSnapshot, ...snapshots]}
+        selectedKeys={new Set()}
+        favoriteKeys={new Set()}
+        onSelectionChange={vi.fn()}
+        onFavoriteToggle={vi.fn()}
+      />
+    );
+
+    const categoryTabs = within(
+      screen.getByRole("tablist", { name: "어종 카테고리" })
+    ).getAllByRole("tab");
+    expect(categoryTabs.map((tab) => tab.textContent)).toEqual([
+      "전체",
+      "어류",
+      "패류",
+      "기타"
+    ]);
+  });
+
+  it("정식 어종명과 LLM Wiki의 다른 이름으로 검색한다", async () => {
+    const user = userEvent.setup();
+    render(
+      <SpeciesSidebar
+        items={[...snapshots, aliasSnapshot]}
+        selectedKeys={new Set()}
+        favoriteKeys={new Set()}
+        onSelectionChange={vi.fn()}
+        onFavoriteToggle={vi.fn()}
+      />
+    );
+
+    const search = screen.getByRole("searchbox", { name: "어종 검색" });
+    await user.type(search, "시마아지");
+
+    expect(screen.getByText("흑점줄전갱이")).toBeVisible();
+    expect(screen.queryByText("광어")).not.toBeInTheDocument();
+
+    await user.clear(search);
+    await user.type(search, "흑점줄전갱이");
+    expect(screen.getByText("흑점줄전갱이")).toBeVisible();
+
+    await user.clear(search);
+    await user.type(search, "없는어종");
+    expect(screen.getByText("검색 결과가 없습니다.")).toBeVisible();
   });
 
   it("행 클릭으로 어종+상태 선택을 추가하고 제거한다", async () => {

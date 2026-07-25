@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { formatSelectionTitle } from "./marketView";
+import {
+  formatSelectionTitle,
+  summarizeSelection
+} from "./marketView";
+import type { SpeciesSnapshot } from "./types";
 
 describe("선택 어종 제목", () => {
   it("선택 개수에 따라 거래 화면 제목을 축약한다", () => {
@@ -15,5 +19,46 @@ describe("선택 어종 제목", () => {
     expect(formatSelectionTitle(["금태", "금태", "양태"])).toBe(
       "금태, 양태"
     );
+  });
+});
+
+describe("선택 어종 요약값", () => {
+  const snapshot = (
+    species: string,
+    priceAvg: number | null,
+    changeRate: number | null
+  ): SpeciesSnapshot => ({
+    key: `${species}::활`,
+    species,
+    status: "활",
+    category: "어류",
+    priceAvg,
+    changeRate,
+    tradeAmount: 0
+  });
+
+  it("두 종류 이상 선택하면 가격과 전일대비의 산술 평균을 계산한다", () => {
+    expect(
+      summarizeSelection([
+        snapshot("금태", 23000, -4.2),
+        snapshot("양태", 5000, 1.2),
+        snapshot("광어", 18000, 2)
+      ])
+    ).toEqual({
+      priceAvg: 15333.333333333334,
+      changeRate: -0.3333333333333333
+    });
+  });
+
+  it("값이 없는 어종은 평균의 분모에서 제외하고 모두 없으면 null을 반환한다", () => {
+    expect(
+      summarizeSelection([
+        snapshot("금태", 23000, null),
+        snapshot("양태", null, null)
+      ])
+    ).toEqual({ priceAvg: 23000, changeRate: null });
+    expect(
+      summarizeSelection([snapshot("양태", null, null)])
+    ).toEqual({ priceAvg: null, changeRate: null });
   });
 });

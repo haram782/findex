@@ -1,4 +1,7 @@
-import { formatSelectionTitle } from "../marketView";
+import {
+  formatSelectionTitle,
+  summarizeSelection
+} from "../marketView";
 import type { MarketTab, SpeciesSnapshot } from "../types";
 
 interface MarketOverviewProps {
@@ -16,7 +19,7 @@ const TABS: { value: MarketTab; label: string }[] = [
 const formatPrice = (value: number | null | undefined): string =>
   value === null || value === undefined
     ? "-"
-    : `${value.toLocaleString("ko-KR")}원`;
+    : `${Math.round(value).toLocaleString("ko-KR")}원`;
 
 export function MarketOverview({
   items,
@@ -25,7 +28,8 @@ export function MarketOverview({
 }: MarketOverviewProps) {
   const primary = items[0];
   const title = formatSelectionTitle(items.map((item) => item.species));
-  const changeRate = primary?.changeRate;
+  const summary = summarizeSelection(items);
+  const changeRate = summary.changeRate;
   const rateClass =
     changeRate === null || changeRate === undefined
       ? ""
@@ -43,14 +47,15 @@ export function MarketOverview({
         <div className="selection-copy">
           <p className="eyebrow">SELECTED MARKET</p>
           <h2>{title}</h2>
-          <span>
-            {primary
-              ? `${primary.status || "일반"} · ${primary.category}`
-              : "오른쪽 시세 목록에서 어종을 선택하세요."}
-          </span>
+          {items.length === 0 && (
+            <span>오른쪽 시세 목록에서 어종을 선택하세요.</span>
+          )}
+          {items.length === 1 && primary && (
+            <span>{`${primary.status || "일반"} · ${primary.category}`}</span>
+          )}
         </div>
         <div className="selection-price">
-          <strong>{formatPrice(primary?.priceAvg)}</strong>
+          <strong>{formatPrice(summary.priceAvg)}</strong>
           <span className={rateClass}>
             {changeRate === null || changeRate === undefined
               ? "-"

@@ -22,8 +22,9 @@ import {
   getZoomPadding
 } from "../chartOptions";
 import {
+  buildCurrentPriceGuides,
   createCurrentPriceGuide,
-  getCurrentPriceColor
+  type CurrentPriceSource
 } from "../currentPriceGuide";
 import {
   createSmoothWheelZoom,
@@ -53,8 +54,7 @@ interface MarketChartsProps {
   points: TimeSeriesPoint[];
   volumeMetric: VolumeMetric;
   theme: Theme;
-  currentPrice: number | null;
-  currentChangeRate: number | null;
+  currentPrices: CurrentPriceSource[];
   chartInterval: ChartInterval;
 }
 
@@ -62,8 +62,7 @@ export function MarketCharts({
   points,
   volumeMetric,
   theme,
-  currentPrice,
-  currentChangeRate,
+  currentPrices,
   chartInterval
 }: MarketChartsProps) {
   const marketChart =
@@ -109,21 +108,18 @@ export function MarketCharts({
       ),
     [dateLabels, labelCount, theme, volumeMaximum]
   );
+  const currentPriceGuides = useMemo(
+    () => buildCurrentPriceGuides(currentPrices, data.datasets),
+    [currentPrices, data.datasets]
+  );
+  const guideKey = currentPriceGuides
+    .map(({ price, color }) => `${price}:${color}`)
+    .join("|");
   const plugins = useMemo(
-    () => [
-      createCurrentPriceGuide(
-        () => currentPrice,
-        () => currentChangeRate,
-        () => theme
-      )
-    ],
-    [currentChangeRate, currentPrice, theme]
+    () => [createCurrentPriceGuide(() => currentPriceGuides)],
+    [currentPriceGuides]
   );
   const changeZoom = (deltaY: number) => wheelZoom.current?.zoom(deltaY);
-  const resetZoom = () => {
-    wheelZoom.current?.reset();
-    marketChart.current?.resetZoom();
-  };
 
   useEffect(() => {
     const chart = marketChart.current;
@@ -144,8 +140,7 @@ export function MarketCharts({
   }, [
     chartInterval,
     chartLabelCount,
-    currentChangeRate,
-    currentPrice,
+    guideKey,
     labelCount,
     theme
   ]);
@@ -158,27 +153,19 @@ export function MarketCharts({
   return (
     <div className="chart-area">
       <div className="chart-controls">
-        {currentPrice !== null && (
-          <strong
-            className="current-price-chip"
-            style={{ color: getCurrentPriceColor(currentChangeRate, theme) }}
-          >
-            현재가 {Math.round(currentPrice).toLocaleString("ko-KR")}원
-          </strong>
-        )}
-        <span>휠로 천천히 확대 · 드래그로 이동</span>
-        <button aria-label="차트 확대" onClick={() => changeZoom(-100)}>
-          +
-        </button>
-        <button aria-label="차트 축소" onClick={() => changeZoom(100)}>
-          −
-        </button>
-        <button onClick={resetZoom}>초기화</button>
+        <div className="zoom-buttons" role="group" aria-label="차트 배율">
+          <button aria-label="차트 확대" onClick={() => changeZoom(-100)}>
+            +
+          </button>
+          <button aria-label="차트 축소" onClick={() => changeZoom(100)}>
+            −
+          </button>
+        </div>
       </div>
       <div className="chart-stack">
         <section className="chart-panel market-chart">
           <Chart
-            key={`${theme}-${currentPrice ?? "empty"}-${currentChangeRate ?? "flat"}`}
+            key={`${theme}-${guideKey}`}
             ref={marketChart}
             type="bar"
             data={data}

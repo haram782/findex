@@ -35,7 +35,7 @@ const selectedItems: SpeciesSnapshot[] = [
 ];
 
 describe("선택 어종 요약", () => {
-  it("대표 어종과 가격, 임시 이미지와 축약 제목을 표시한다", () => {
+  it("선택 어종들의 평균 가격과 평균 전일대비, 축약 제목을 표시한다", () => {
     render(
       <MarketOverview
         items={selectedItems}
@@ -45,8 +45,22 @@ describe("선택 어종 요약", () => {
     );
 
     expect(screen.getByRole("heading", { name: "금태 외 2" })).toBeVisible();
-    expect(screen.getByText("23,000원")).toBeVisible();
+    expect(screen.getByText("15,333원")).toBeVisible();
+    expect(screen.getByText("-0.33%")).toHaveClass("negative");
     expect(screen.getByAltText("금태 임시 이미지")).toBeVisible();
+    expect(screen.queryByText("선 · 어류")).not.toBeInTheDocument();
+  });
+
+  it("한 종류만 선택하면 상태와 카테고리를 표시한다", () => {
+    render(
+      <MarketOverview
+        items={[selectedItems[0]]}
+        activeTab="market"
+        onTabChange={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText("선 · 어류")).toBeVisible();
   });
 
   it("탭을 누르면 화면 전환을 요청한다", async () => {

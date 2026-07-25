@@ -5,6 +5,7 @@ import {
   type MarketSortKey,
   type SortDirection
 } from "../marketTable";
+import { matchesSpeciesSearch } from "../speciesKnowledge";
 import type { SpeciesSnapshot } from "../types";
 
 interface SpeciesSidebarProps {
@@ -49,12 +50,20 @@ export function SpeciesSidebar({
 }: SpeciesSidebarProps) {
   const [view, setView] = useState<"all" | "favorites">("all");
   const [category, setCategory] = useState("전체");
+  const [query, setQuery] = useState("");
   const [sort, setSort] = useState<{
     key: MarketSortKey;
     direction: SortDirection;
   }>({ key: "tradeAmount", direction: "desc" });
   const categories = useMemo(
-    () => ["전체", ...new Set(items.map((item) => item.category))],
+    () => {
+      const unique = [...new Set(items.map((item) => item.category))];
+      return [
+        "전체",
+        ...unique.filter((item) => item !== "기타"),
+        ...unique.filter((item) => item === "기타")
+      ];
+    },
     [items]
   );
   const filtered = useMemo(
@@ -62,11 +71,12 @@ export function SpeciesSidebar({
       const matching = items.filter(
         (item) =>
           (view === "all" || favoriteKeys.has(item.key)) &&
-          (category === "전체" || item.category === category)
+          (category === "전체" || item.category === category) &&
+          matchesSpeciesSearch(item, query)
       );
       return sortSnapshots(matching, sort.key, sort.direction);
     },
-    [category, favoriteKeys, items, sort.direction, sort.key, view]
+    [category, favoriteKeys, items, query, sort.direction, sort.key, view]
   );
 
   const updateSort = (key: MarketSortKey) => {
@@ -114,6 +124,19 @@ export function SpeciesSidebar({
           관심어종
         </button>
       </div>
+      <label className="species-search">
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <path d="m20.5 19-4.4-4.4a7 7 0 1 0-1.5 1.5l4.4 4.4 1.5-1.5ZM5 10.5a5.5 5.5 0 1 1 11 0 5.5 5.5 0 0 1-11 0Z" />
+        </svg>
+        <span className="visually-hidden">어종 검색</span>
+        <input
+          type="search"
+          aria-label="어종 검색"
+          placeholder="어종명·다른 이름 검색"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+        />
+      </label>
       <div className="category-tabs" role="tablist" aria-label="어종 카테고리">
         {categories.map((item) => (
           <button
@@ -211,7 +234,9 @@ export function SpeciesSidebar({
             <p className="empty-sidebar">
               {view === "favorites"
                 ? "관심어종으로 등록한 어종이 없습니다."
-                : "표시할 시세가 없습니다."}
+                : query
+                  ? "검색 결과가 없습니다."
+                  : "표시할 시세가 없습니다."}
             </p>
           )}
         </div>

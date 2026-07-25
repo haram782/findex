@@ -157,8 +157,7 @@ export function buildMarketChartData(
             ? dataset.backgroundColor.replace(/99$/, "55")
             : dataset.backgroundColor,
         borderWidth: 0,
-        barPercentage: 0.62,
-        categoryPercentage: 0.74
+        maxBarThickness: 10
       }))
     ];
   const labels = (price.labels ?? []).map(String);

@@ -1,58 +1,156 @@
 import type { ChartType, Plugin } from "chart.js";
-import type { Theme } from "./types";
 
-export const getCurrentPriceColor = (
-  changeRate: number | null,
-  theme: Theme
-): string => {
-  if (changeRate === null) {
-    return theme === "dark" ? "#48a3ff" : "#1474e5";
+const BADGE_HEIGHT = 22;
+const BADGE_GAP = 3;
+
+export interface CurrentPriceSource {
+  species: string;
+  status: string;
+  price: number | null;
+}
+
+export interface CurrentPriceGuide {
+  price: number;
+  color: string;
+}
+
+interface PriceDataset {
+  type?: string;
+  label?: string;
+  borderColor?: unknown;
+}
+
+export const buildCurrentPriceGuides = (
+  sources: readonly CurrentPriceSource[],
+  datasets: readonly PriceDataset[]
+): CurrentPriceGuide[] =>
+  sources.flatMap((source) => {
+    if (source.price === null) {
+      return [];
+    }
+
+    const labelPrefix = `${source.status} ${source.species} ·`;
+    const dataset = datasets.find(
+      (candidate) =>
+        candidate.type === "line" &&
+        candidate.label?.startsWith(labelPrefix) &&
+        candidate.label.endsWith("· 평균가") &&
+        typeof candidate.borderColor === "string"
+    );
+    return dataset && typeof dataset.borderColor === "string"
+      ? [{ price: source.price, color: dataset.borderColor }]
+      : [];
+  });
+
+export const positionGuideBadges = (
+  desiredPositions: number[],
+  top: number,
+  bottom: number
+): number[] => {
+  if (desiredPositions.length === 0) {
+    return [];
   }
-  return changeRate >= 0 ? "#ff5874" : "#398dff";
+
+  const halfHeight = BADGE_HEIGHT / 2;
+  const minimum = top + halfHeight;
+  const maximum = bottom - halfHeight;
+  const spacing = BADGE_HEIGHT + BADGE_GAP;
+  const ordered = desiredPositions
+    .map((desired, index) => ({ desired, index, position: desired }))
+    .sort((left, right) => left.desired - right.desired);
+
+  ordered.forEach((item, index) => {
+    const clamped = Math.min(Math.max(item.desired, minimum), maximum);
+    item.position =
+      index === 0
+        ? clamped
+        : Math.max(clamped, ordered[index - 1].position + spacing);
+  });
+
+  const overflow = ordered[ordered.length - 1].position - maximum;
+  if (overflow > 0) {
+    ordered.forEach((item) => {
+      item.position -= overflow;
+    });
+  }
+
+  for (let index = ordered.length - 2; index >= 0; index -= 1) {
+    ordered[index].position = Math.min(
+      ordered[index].position,
+      ordered[index + 1].position - spacing
+    );
+  }
+
+  const underflow = minimum - ordered[0].position;
+  if (underflow > 0) {
+    ordered.forEach((item) => {
+      item.position += underflow;
+    });
+  }
+
+  const result = Array<number>(desiredPositions.length);
+  ordered.forEach((item) => {
+    result[item.index] = item.position;
+  });
+  return result;
 };
 
 export const createCurrentPriceGuide = (
-  getPrice: () => number | null,
-  getChangeRate: () => number | null,
-  getTheme: () => Theme
+  getGuides: () => CurrentPriceGuide[]
 ): Plugin<ChartType> => ({
   id: "currentPriceGuide",
   afterDraw(chart) {
-    const price = getPrice();
     const priceScale = chart.scales.price;
-    if (price === null || !priceScale) {
-      return;
-    }
-    const y = priceScale.getPixelForValue(price);
-    const { ctx, chartArea } = chart;
-    if (y < chartArea.top || y > chartArea.bottom) {
+    if (!priceScale) {
       return;
     }
 
-    const color = getCurrentPriceColor(getChangeRate(), getTheme());
-    const label = Math.round(price).toLocaleString("ko-KR");
-    const badgeWidth = Math.max(58, ctx.measureText(label).width + 16);
-    const badgeX = Math.min(
-      chartArea.right + 4,
-      chart.width - badgeWidth - 2
+    const { ctx, chartArea } = chart;
+    const visible = getGuides()
+      .map((guide) => ({
+        guide,
+        lineY: priceScale.getPixelForValue(guide.price)
+      }))
+      .filter(
+        ({ lineY }) => lineY >= chartArea.top && lineY <= chartArea.bottom
+      );
+    const badgePositions = positionGuideBadges(
+      visible.map(({ lineY }) => lineY),
+      chartArea.top,
+      chartArea.bottom
     );
 
-    ctx.save();
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1;
-    ctx.setLineDash([3, 3]);
-    ctx.beginPath();
-    ctx.moveTo(chartArea.left, y);
-    ctx.lineTo(chartArea.right, y);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle = color;
-    ctx.fillRect(badgeX, y - 11, badgeWidth, 22);
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "600 11px Inter, sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(label, badgeX + badgeWidth / 2, y);
-    ctx.restore();
+    visible.forEach(({ guide, lineY }, index) => {
+      const label = Math.round(guide.price).toLocaleString("ko-KR");
+      const badgeWidth = Math.max(58, ctx.measureText(label).width + 16);
+      const badgeX = Math.min(
+        chartArea.right + 4,
+        chart.width - badgeWidth - 2
+      );
+      const badgeY = badgePositions[index];
+
+      ctx.save();
+      ctx.strokeStyle = guide.color;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(chartArea.left, lineY);
+      ctx.lineTo(chartArea.right, lineY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = guide.color;
+      ctx.fillRect(
+        badgeX,
+        badgeY - BADGE_HEIGHT / 2,
+        badgeWidth,
+        BADGE_HEIGHT
+      );
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "600 11px Inter, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(label, badgeX + badgeWidth / 2, badgeY);
+      ctx.restore();
+    });
   }
 });

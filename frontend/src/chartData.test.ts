@@ -97,6 +97,7 @@ describe("차트 데이터 변환", () => {
       type: "bar",
       yAxisID: "volume",
       label: "활 광어 · 제주 · 수량",
+      maxBarThickness: 10,
       data: [
         { x: 0, y: 12 },
         { x: 1, y: 10 }
