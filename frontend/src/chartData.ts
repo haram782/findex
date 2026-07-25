@@ -74,6 +74,7 @@ export function buildPriceChartData(
         borderColor: color,
         borderDash: [7, 5],
         borderWidth: 1,
+        hidden: true,
         pointRadius: 0
       },
       {
@@ -82,6 +83,7 @@ export function buildPriceChartData(
         borderColor: color,
         borderDash: [2, 4],
         borderWidth: 1,
+        hidden: true,
         pointRadius: 0
       }
     );

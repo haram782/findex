@@ -59,6 +59,14 @@ describe("차트 데이터 변환", () => {
     });
   });
 
+  it("최고가와 최저가 선은 기본 토글을 끈 상태로 만든다", () => {
+    const chart = buildPriceChartData(points);
+
+    expect(chart.datasets[0].hidden).not.toBe(true);
+    expect(chart.datasets[1].hidden).toBe(true);
+    expect(chart.datasets[2].hidden).toBe(true);
+  });
+
   it("수량과 거래대금 중 요청한 하나의 bar dataset만 만든다", () => {
     const quantity = buildBarChartData(points, "quantity");
     const amount = buildBarChartData(points, "tradeAmount");
