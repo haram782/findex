@@ -1,8 +1,19 @@
 import type { ChartType, Plugin } from "chart.js";
 import type { Theme } from "./types";
 
+export const getCurrentPriceColor = (
+  changeRate: number | null,
+  theme: Theme
+): string => {
+  if (changeRate === null) {
+    return theme === "dark" ? "#48a3ff" : "#1474e5";
+  }
+  return changeRate >= 0 ? "#ff5874" : "#398dff";
+};
+
 export const createCurrentPriceGuide = (
   getPrice: () => number | null,
+  getChangeRate: () => number | null,
   getTheme: () => Theme
 ): Plugin<ChartType> => ({
   id: "currentPriceGuide",
@@ -18,9 +29,9 @@ export const createCurrentPriceGuide = (
       return;
     }
 
-    const color = getTheme() === "dark" ? "#48a3ff" : "#1474e5";
+    const color = getCurrentPriceColor(getChangeRate(), getTheme());
     const label = Math.round(price).toLocaleString("ko-KR");
-    const badgeWidth = Math.max(54, ctx.measureText(label).width + 14);
+    const badgeWidth = Math.max(58, ctx.measureText(label).width + 16);
     const badgeX = Math.min(
       chartArea.right + 4,
       chart.width - badgeWidth - 2
@@ -36,9 +47,9 @@ export const createCurrentPriceGuide = (
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.fillStyle = color;
-    ctx.fillRect(badgeX, y - 10, badgeWidth, 20);
+    ctx.fillRect(badgeX, y - 11, badgeWidth, 22);
     ctx.fillStyle = "#ffffff";
-    ctx.font = "600 10px Inter, sans-serif";
+    ctx.font = "600 11px Inter, sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(label, badgeX + badgeWidth / 2, y);

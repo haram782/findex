@@ -190,6 +190,8 @@ export default function App() {
                 volumeMetric={volumeMetric}
                 theme={theme}
                 currentPrice={selectedItems[0]?.priceAvg ?? null}
+                currentChangeRate={selectedItems[0]?.changeRate ?? null}
+                chartInterval={chartInterval}
               />
             </div>
           )}

@@ -51,7 +51,7 @@ describe("시장 차트 확대와 이동", () => {
   });
 
   it("가로축 휠 확대, 핀치, 드래그 이동 설정을 유지한다", () => {
-    const options = createMarketChartOptions("dark");
+    const options = createMarketChartOptions("dark", 1, 5);
     const zoom = options.plugins?.zoom;
 
     expect(zoom?.pan).toMatchObject({
@@ -65,8 +65,20 @@ describe("시장 차트 확대와 이동", () => {
     });
     expect(zoom?.zoom?.pinch).toMatchObject({ enabled: true });
     expect(zoom?.zoom?.mode).toBe("x");
-    expect(options.scales?.price).toMatchObject({ axis: "y" });
+    expect(zoom?.limits?.x).toMatchObject({
+      min: 0,
+      max: 10,
+      minRange: 2
+    });
+    expect(options.layout?.padding).toMatchObject({ right: 72 });
+    expect(options.scales?.price).toMatchObject({
+      axis: "y",
+      position: "left"
+    });
+    expect(options.scales?.x).toMatchObject({ min: 3, max: 7 });
     expect(options.scales?.volume).toMatchObject({ axis: "y" });
+    expect(options.scales?.x?.ticks?.font).toMatchObject({ size: 12 });
+    expect(options.scales?.price?.ticks?.font).toMatchObject({ size: 12 });
   });
 
   it("단일 통합 차트에 확대, 축소, 초기화를 적용한다", async () => {
@@ -77,6 +89,8 @@ describe("시장 차트 확대와 이동", () => {
         volumeMetric="tradeAmount"
         theme="dark"
         currentPrice={23000}
+        currentChangeRate={-4.2}
+        chartInterval="daily"
       />
     );
     chartSpies.reset.mockClear();
@@ -106,9 +120,13 @@ describe("시장 차트 확대와 이동", () => {
         volumeMetric="tradeAmount"
         theme="light"
         currentPrice={23000}
+        currentChangeRate={3.1}
+        chartInterval="daily"
       />
     );
 
-    expect(screen.getByText("현재가 23,000원")).toBeVisible();
+    expect(screen.getByText("현재가 23,000원")).toHaveStyle({
+      color: "#ff5874"
+    });
   });
 });

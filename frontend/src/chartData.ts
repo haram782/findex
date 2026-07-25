@@ -1,7 +1,17 @@
 import type { ChartData } from "chart.js";
-import type { TimeSeriesPoint, VolumeMetric } from "./types";
+import type {
+  ChartInterval,
+  TimeSeriesPoint,
+  VolumeMetric
+} from "./types";
 
 const COLORS = ["#2388ff", "#ff5874", "#2ecb81", "#f3a530", "#9b72f2"];
+const DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000;
+const INTERVAL_DAYS: Record<ChartInterval, number> = {
+  daily: 1,
+  weekly: 7,
+  twentyDay: 20
+};
 
 export const getSeriesKey = (point: TimeSeriesPoint): string =>
   `${point.species}::${point.status}::${point.group ?? ""}`;
@@ -113,7 +123,9 @@ export function buildBarChartData(
 
 export function buildMarketChartData(
   points: TimeSeriesPoint[],
-  metric: VolumeMetric
+  metric: VolumeMetric,
+  datePadding = 0,
+  chartInterval: ChartInterval = "daily"
 ): ChartData<"line" | "bar", (number | null)[], string> {
   if (points.length === 0) {
     return { labels: [], datasets: [] };
@@ -121,9 +133,7 @@ export function buildMarketChartData(
   const price = buildPriceChartData(points);
   const volume = buildBarChartData(points, metric);
 
-  return {
-    labels: price.labels,
-    datasets: [
+  const datasets = [
       ...price.datasets.map((dataset) => ({
         ...dataset,
         type: "line" as const,
@@ -143,6 +153,45 @@ export function buildMarketChartData(
         barPercentage: 0.62,
         categoryPercentage: 0.74
       }))
-    ]
+    ];
+  const labels = (price.labels ?? []).map(String);
+  if (datePadding === 0) {
+    return { labels, datasets };
+  }
+
+  const timestamps = labels.map((label) => Date.parse(label));
+  const validTimestamps = timestamps.every(Number.isFinite);
+  const interval =
+    INTERVAL_DAYS[chartInterval] * DAY_IN_MILLISECONDS;
+  const formatDate = (timestamp: number): string =>
+    new Date(timestamp).toISOString().slice(0, 10);
+  const before = validTimestamps
+    ? Array.from({ length: datePadding }, (_, index) =>
+        formatDate(
+          timestamps[0] - (datePadding - index) * interval
+        )
+      )
+    : Array<string>(datePadding).fill("");
+  const after = validTimestamps
+    ? Array.from({ length: datePadding }, (_, index) =>
+        formatDate(
+          timestamps[timestamps.length - 1] + (index + 1) * interval
+        )
+      )
+    : Array<string>(datePadding).fill("");
+
+  return {
+    labels: [...before, ...labels, ...after],
+    datasets: datasets.map((dataset) => {
+      const emptyValue = dataset.type === "bar" ? 0 : null;
+      return {
+        ...dataset,
+        data: [
+          ...Array<number | null>(datePadding).fill(emptyValue),
+          ...dataset.data,
+          ...Array<number | null>(datePadding).fill(emptyValue)
+        ]
+      };
+    })
   };
 }

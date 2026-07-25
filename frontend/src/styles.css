@@ -121,7 +121,7 @@ button:focus-visible {
 .brand p {
   margin-top: 2px;
   color: var(--text-subtle);
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .topbar-actions {
@@ -195,7 +195,7 @@ button:focus-visible {
 
 .eyebrow {
   color: #258eff;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.14em;
 }
@@ -213,7 +213,7 @@ button:focus-visible {
   color: var(--text-muted);
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .selection-price {
@@ -291,7 +291,7 @@ button:focus-visible {
 
 .segmented button {
   padding: 6px 9px;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .segmented button.active {
@@ -308,7 +308,7 @@ button:focus-visible {
   justify-content: flex-end;
   gap: 5px;
   color: var(--text-subtle);
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .current-price-chip {
@@ -317,7 +317,7 @@ button:focus-visible {
   border-radius: 5px;
   color: #48a3ff;
   background: var(--blue-soft);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -330,12 +330,12 @@ button:focus-visible {
   color: var(--text-muted);
   background: var(--surface-raised);
   cursor: pointer;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .chart-stack {
-  height: calc(100vh - 344px);
-  min-height: 570px;
+  height: clamp(360px, calc(100vh - 390px), 680px);
+  min-height: 0;
 }
 
 .chart-panel {
@@ -393,7 +393,7 @@ button:focus-visible {
   border-radius: 12px;
   color: #2388ff;
   background: var(--blue-soft);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.12em;
 }
@@ -416,12 +416,15 @@ button:focus-visible {
 
 .placeholder-card span {
   color: var(--text-subtle);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .sidebar {
   min-width: 0;
+  max-height: calc(100vh - 118px);
   padding: 18px 16px;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 11px;
@@ -443,7 +446,7 @@ button:focus-visible {
   color: #52a7ff;
   background: var(--blue-soft);
   text-align: center;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .sidebar-mode-tabs {
@@ -459,7 +462,7 @@ button:focus-visible {
 
 .sidebar-mode-tabs button {
   padding: 7px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -478,12 +481,19 @@ button:focus-visible {
 .category-tabs button {
   flex: 0 0 auto;
   padding: 6px 8px;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .category-tabs button.active {
   color: var(--text);
   background: var(--blue-soft);
+}
+
+.species-table {
+  min-height: 0;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
 }
 
 .species-table-header,
@@ -503,7 +513,7 @@ button:focus-visible {
   border-bottom: 1px solid var(--border-soft);
   color: var(--text-subtle);
   background: var(--surface-raised);
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .species-table-header button {
@@ -527,7 +537,7 @@ button:focus-visible {
 
 .sort-indicator {
   color: var(--text-subtle);
-  font-size: 7px;
+  font-size: 9px;
   opacity: 0.48;
 }
 
@@ -546,7 +556,8 @@ button:focus-visible {
 }
 
 .species-list {
-  max-height: calc(100vh - 245px);
+  min-height: 0;
+  flex: 1;
   overflow-y: auto;
 }
 
@@ -626,12 +637,12 @@ button:focus-visible {
 }
 
 .species-name {
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .species-name small {
   color: var(--text-subtle);
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 600;
 }
 
@@ -652,13 +663,13 @@ button:focus-visible {
   text-overflow: ellipsis;
   white-space: nowrap;
   pointer-events: none;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .species-price {
   grid-column: 2;
   grid-row: 1;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .species-change {
@@ -684,7 +695,7 @@ button:focus-visible {
   padding: 30px 10px;
   color: var(--text-subtle);
   text-align: center;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 @media (max-width: 1080px) {
@@ -703,9 +714,15 @@ button:focus-visible {
 
   .sidebar {
     order: -1;
+    max-height: none;
+  }
+
+  .species-table {
+    flex: none;
   }
 
   .species-list {
+    flex: none;
     max-height: 280px;
   }
 

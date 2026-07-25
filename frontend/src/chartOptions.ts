@@ -3,22 +3,41 @@ import type { Theme } from "./types";
 
 type MarketChartOptions = ChartOptions<"line" | "bar">;
 
+export const getZoomPadding = (labelCount: number): number =>
+  Math.max(2, Math.ceil(labelCount * 0.5));
+
 export const createMarketChartOptions = (
   theme: Theme,
-  volumeMaximum = 1
+  volumeMaximum = 1,
+  labelCount = 0
 ): MarketChartOptions => {
   const muted = theme === "dark" ? "#8c9bb0" : "#667085";
   const grid = theme === "dark" ? "#1d2b3c" : "#e6eaf0";
+  const zoomPadding = getZoomPadding(labelCount);
+  const lastLabelIndex = Math.max(labelCount - 1, 0);
+  const extendedLastLabelIndex = labelCount + zoomPadding * 2 - 1;
   return {
     responsive: true,
     maintainAspectRatio: false,
+    layout: { padding: { right: 72 } },
     interaction: { mode: "index", intersect: false },
     plugins: {
       legend: {
-        labels: { color: muted, boxWidth: 14, usePointStyle: true }
+        labels: {
+          color: muted,
+          boxWidth: 14,
+          font: { size: 12 },
+          usePointStyle: true
+        }
       },
       zoom: {
-        limits: { x: { min: "original", max: "original", minRange: 2 } },
+        limits: {
+          x: {
+            min: 0,
+            max: extendedLastLabelIndex,
+            minRange: 2
+          }
+        },
         pan: { enabled: true, mode: "x", threshold: 10 },
         zoom: {
           wheel: { enabled: true, speed: 0.03 },
@@ -28,12 +47,17 @@ export const createMarketChartOptions = (
       }
     },
     scales: {
-      x: { ticks: { color: muted }, grid: { color: grid } },
+      x: {
+        min: labelCount > 0 ? zoomPadding : undefined,
+        max: labelCount > 0 ? zoomPadding + lastLabelIndex : undefined,
+        ticks: { color: muted, font: { size: 12 } },
+        grid: { color: grid }
+      },
       price: {
         type: "linear",
         axis: "y",
-        position: "right",
-        ticks: { color: muted },
+        position: "left",
+        ticks: { color: muted, font: { size: 12 } },
         grid: { color: grid }
       },
       volume: {

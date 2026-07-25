@@ -93,6 +93,62 @@ describe("차트 데이터 변환", () => {
     });
   });
 
+  it("축소 시 드러날 날짜 여백을 가격선과 거래량에 함께 추가한다", () => {
+    const chart = buildMarketChartData(points, "quantity", 2);
+
+    expect(chart.labels).toEqual([
+      "2026-07-22",
+      "2026-07-23",
+      "2026-07-24",
+      "2026-07-25",
+      "2026-07-26",
+      "2026-07-27"
+    ]);
+    expect(chart.datasets[0].data).toEqual([
+      null,
+      null,
+      18000,
+      19000,
+      null,
+      null
+    ]);
+    expect(chart.datasets[6].data).toEqual([0, 0, 12, 10, 0, 0]);
+  });
+
+  it("단일 주봉에서도 주 단위 날짜 여백을 유지한다", () => {
+    const chart = buildMarketChartData(
+      [points[0]],
+      "quantity",
+      1,
+      "weekly"
+    );
+
+    expect(chart.labels).toEqual([
+      "2026-07-17",
+      "2026-07-24",
+      "2026-07-31"
+    ]);
+  });
+
+  it("불완전한 20일봉의 실제 간격과 무관하게 20일 여백을 만든다", () => {
+    const chart = buildMarketChartData(
+      [
+        { ...points[0], date: "2026-07-20" },
+        { ...points[1], date: "2026-07-21" }
+      ],
+      "quantity",
+      1,
+      "twentyDay"
+    );
+
+    expect(chart.labels).toEqual([
+      "2026-06-30",
+      "2026-07-20",
+      "2026-07-21",
+      "2026-08-10"
+    ]);
+  });
+
   it("데이터가 없으면 빈 차트 구조를 반환한다", () => {
     expect(buildPriceChartData([])).toEqual({ labels: [], datasets: [] });
     expect(buildBarChartData([], "quantity")).toEqual({
