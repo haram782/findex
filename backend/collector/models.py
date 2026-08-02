@@ -100,3 +100,42 @@ class SpeciesCatalog(models.Model):
     class Meta:
         db_table = "species_catalog"
         ordering = ["species"]
+
+
+class SpeciesProfile(models.Model):
+    class ReviewStatus(models.TextChoices):
+        DRAFT = "draft", "초안"
+        PUBLISHED = "published", "발행"
+
+    class VerificationStatus(models.TextChoices):
+        UNVERIFIED = "unverified", "미검증"
+        VERIFIED = "verified", "검증됨"
+        FLAGGED = "flagged", "문제 발견"
+
+    species = models.CharField(max_length=100, unique=True)
+    season = models.CharField(max_length=100, blank=True)
+    main_origins = models.JSONField(default=list, blank=True)
+    features = models.TextField(blank=True)
+    handling_notes = models.TextField(blank=True)
+    image_url = models.URLField(blank=True)
+    source_urls = models.JSONField(default=list, blank=True)
+    generated_by = models.CharField(max_length=100, blank=True)
+    generated_at = models.DateTimeField(null=True, blank=True)
+    review_status = models.CharField(
+        max_length=20,
+        choices=ReviewStatus.choices,
+        default=ReviewStatus.DRAFT,
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    verification_status = models.CharField(
+        max_length=20,
+        choices=VerificationStatus.choices,
+        default=VerificationStatus.UNVERIFIED,
+    )
+    verification_notes = models.TextField(blank=True)
+    verified_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "species_profile"
+        ordering = ["species"]

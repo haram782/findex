@@ -19,7 +19,7 @@ from api.query import (
     parse_selection_query,
     parse_snapshot_query,
 )
-from collector.models import PriceRecord, SpeciesCatalog
+from collector.models import PriceRecord, SpeciesCatalog, SpeciesProfile
 
 MONEY_FIELD = DecimalField(max_digits=32, decimal_places=5)
 
@@ -165,6 +165,39 @@ class TimeSeriesView(APIView):
                 }
             )
         return Response({"results": results})
+
+
+class SpeciesProfileView(APIView):
+    def get(self, request: Request, species: str) -> Response:
+        profile = SpeciesProfile.objects.filter(
+            species=species,
+            review_status=SpeciesProfile.ReviewStatus.PUBLISHED,
+            verification_status=SpeciesProfile.VerificationStatus.VERIFIED,
+        ).first()
+        if profile is None:
+            return Response(
+                {"code": "not_found", "message": "발행된 어종 정보가 없습니다."},
+                status=404,
+            )
+        return Response(
+            {
+                "species": profile.species,
+                "season": profile.season,
+                "main_origins": profile.main_origins,
+                "features": profile.features,
+                "handling_notes": profile.handling_notes,
+                "image_url": profile.image_url,
+                "source_urls": profile.source_urls,
+                "generated_by": profile.generated_by,
+                "generated_at": (
+                    profile.generated_at.isoformat() if profile.generated_at else None
+                ),
+                "review_status": profile.review_status,
+                "reviewed_at": (
+                    profile.reviewed_at.isoformat() if profile.reviewed_at else None
+                ),
+            }
+        )
 
 
 def _snapshot_rows(target_date: date):

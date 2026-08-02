@@ -5,12 +5,14 @@ from typing import Iterable
 
 import holidays
 from django.db import transaction
+from django.utils import timezone
 
 from collector.models import (
     CollectionLog,
     CollectionObservation,
     PriceRecord,
     SpeciesCatalog,
+    SpeciesProfile,
 )
 from collector.page_client import MobilePricePageClient, PricePageClientError
 from collector.parser import ParsedPriceRow, PriceTableParseError
@@ -232,3 +234,124 @@ class CollectionService:
                     business_days += 1
             cursor -= timedelta(days=1)
         return DailyCollection(latest=latest, backfill=CollectionBatch(tuple(results)))
+
+
+@dataclass(frozen=True)
+class SpeciesProfileError:
+    code: str
+    message: str
+
+
+class SpeciesProfileService:
+    def save_draft(
+        self,
+        species: str,
+        *,
+        season: str = "",
+        main_origins: list[str] | None = None,
+        features: str = "",
+        handling_notes: str = "",
+        image_url: str = "",
+        source_urls: list[str] | None = None,
+        generated_by: str = "",
+        generated_at=None,
+    ) -> Result[SpeciesProfile, SpeciesProfileError]:
+        if not PriceRecord.objects.filter(species=species).exists():
+            return Result.err(
+                SpeciesProfileError(
+                    "unknown_species",
+                    f"거래 기록이 없는 어종에는 프로필을 만들 수 없습니다: {species}",
+                )
+            )
+        if not source_urls:
+            return Result.err(
+                SpeciesProfileError(
+                    "source_required",
+                    "출처 URL을 최소 1개 이상 지정해야 합니다.",
+                )
+            )
+        profile, _ = SpeciesProfile.objects.update_or_create(
+            species=species,
+            defaults={
+                "season": season,
+                "main_origins": main_origins or [],
+                "features": features,
+                "handling_notes": handling_notes,
+                "image_url": image_url,
+                "source_urls": source_urls,
+                "generated_by": generated_by,
+                "generated_at": generated_at,
+                "review_status": SpeciesProfile.ReviewStatus.DRAFT,
+                "verification_status": SpeciesProfile.VerificationStatus.UNVERIFIED,
+                "verification_notes": "",
+                "verified_at": None,
+            },
+        )
+        return Result.ok(profile)
+
+    def publish(self, species: str) -> Result[SpeciesProfile, SpeciesProfileError]:
+        try:
+            profile = SpeciesProfile.objects.get(species=species)
+        except SpeciesProfile.DoesNotExist:
+            return Result.err(
+                SpeciesProfileError(
+                    "profile_not_found",
+                    f"저장된 초안이 없는 어종입니다: {species}",
+                )
+            )
+        if (
+            profile.verification_status
+            != SpeciesProfile.VerificationStatus.VERIFIED
+        ):
+            return Result.err(
+                SpeciesProfileError(
+                    "verification_required",
+                    "독립 검증을 통과한 어종 정보만 발행할 수 있습니다.",
+                )
+            )
+        profile.review_status = SpeciesProfile.ReviewStatus.PUBLISHED
+        profile.reviewed_at = timezone.now()
+        profile.save(update_fields=["review_status", "reviewed_at", "updated_at"])
+        return Result.ok(profile)
+
+    def verify(
+        self,
+        species: str,
+        *,
+        verified: bool,
+        notes: str = "",
+    ) -> Result[SpeciesProfile, SpeciesProfileError]:
+        try:
+            profile = SpeciesProfile.objects.get(species=species)
+        except SpeciesProfile.DoesNotExist:
+            return Result.err(
+                SpeciesProfileError(
+                    "profile_not_found",
+                    f"저장된 초안이 없는 어종입니다: {species}",
+                )
+            )
+        now = timezone.now()
+        profile.verification_status = (
+            SpeciesProfile.VerificationStatus.VERIFIED
+            if verified
+            else SpeciesProfile.VerificationStatus.FLAGGED
+        )
+        profile.verification_notes = notes
+        profile.verified_at = now
+        profile.review_status = (
+            SpeciesProfile.ReviewStatus.PUBLISHED
+            if verified
+            else SpeciesProfile.ReviewStatus.DRAFT
+        )
+        profile.reviewed_at = now if verified else profile.reviewed_at
+        profile.save(
+            update_fields=[
+                "verification_status",
+                "verification_notes",
+                "verified_at",
+                "review_status",
+                "reviewed_at",
+                "updated_at",
+            ]
+        )
+        return Result.ok(profile)

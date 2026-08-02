@@ -27,4 +27,23 @@ describe("LLM Wiki 어종 다른 이름", () => {
     expect(matchesSpeciesSearch(item, "SHIMA AJI")).toBe(true);
     expect(matchesSpeciesSearch(item, "광어")).toBe(false);
   });
+
+  it("금태(눈볼대)를 표준명으로 검색해도 찾을 수 있다", () => {
+    expect(getSpeciesAliases("금태")).toContain("눈볼대");
+    expect(
+      matchesSpeciesSearch(
+        { ...item, species: "금태", key: "금태::선::kg" },
+        "눈볼대"
+      )
+    ).toBe(true);
+  });
+
+  it("양태를 지역 명칭 장대로 검색해도 찾을 수 있다", () => {
+    expect(
+      matchesSpeciesSearch(
+        { ...item, species: "양태", key: "양태::선::kg" },
+        "장대"
+      )
+    ).toBe(true);
+  });
 });

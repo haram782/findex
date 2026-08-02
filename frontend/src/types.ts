@@ -35,3 +35,16 @@ export interface TimeSeriesPoint extends SpeciesSelection {
   quantity: number;
   tradeAmount: number;
 }
+
+export interface SpeciesProfile {
+  species: string;
+  season: string;
+  mainOrigins: string[];
+  features: string;
+  handlingNotes: string;
+  imageUrl: string;
+  sourceUrls: string[];
+  generatedBy: string;
+  generatedAt: string | null;
+  reviewedAt: string | null;
+}

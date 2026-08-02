@@ -435,6 +435,52 @@ button:focus-visible {
   font-size: 12px;
 }
 
+.species-profile-card dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 88px 1fr;
+  gap: 10px 16px;
+}
+
+.species-profile-card dt {
+  color: var(--text-subtle);
+  font-size: 12px;
+}
+
+.species-profile-card dd {
+  margin: 0;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.species-profile-sources {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.species-profile-sources small {
+  color: var(--text-subtle);
+  font-size: 11px;
+}
+
+.species-profile-sources ul {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.species-profile-sources a {
+  color: #2388ff;
+  font-size: 12px;
+  line-height: 1.5;
+  word-break: break-all;
+}
+
 .wiki-aliases {
   margin-top: 8px;
   padding-top: 12px;

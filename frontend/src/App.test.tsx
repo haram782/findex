@@ -2,13 +2,19 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 
-const { marketChartsMock, useDashboardMock } = vi.hoisted(() => ({
-  marketChartsMock: vi.fn(() => <div data-testid="market-charts" />),
-  useDashboardMock: vi.fn()
-}));
+const { marketChartsMock, useDashboardMock, useSpeciesProfileMock } =
+  vi.hoisted(() => ({
+    marketChartsMock: vi.fn(() => <div data-testid="market-charts" />),
+    useDashboardMock: vi.fn(),
+    useSpeciesProfileMock: vi.fn()
+  }));
 
 vi.mock("./hooks/useDashboard", () => ({
   useDashboard: useDashboardMock
+}));
+
+vi.mock("./hooks/useSpeciesProfile", () => ({
+  useSpeciesProfile: useSpeciesProfileMock
 }));
 
 vi.mock("./hooks/usePreferences", () => ({
@@ -52,6 +58,11 @@ describe("시장 시세 툴바", () => {
   beforeEach(() => {
     marketChartsMock.mockClear();
     useDashboardMock.mockClear();
+    useSpeciesProfileMock.mockReturnValue({
+      profile: null,
+      loading: false,
+      error: null
+    });
     useDashboardMock.mockReturnValue({
       snapshots: [],
       points: [

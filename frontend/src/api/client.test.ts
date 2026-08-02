@@ -150,4 +150,59 @@ describe("대시보드 API 클라이언트", () => {
       "box"
     ]);
   });
+
+  it("발행된 어종 정보를 조회해 camelCase로 정규화한다", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          species: "전복",
+          season: "가을~겨울",
+          main_origins: ["완도", "제주"],
+          features: "맛이 좋다",
+          handling_notes: "손질 후 냉장 보관",
+          image_url: "https://example.com/image.jpg",
+          source_urls: ["https://example.com/source"],
+          generated_by: "claude-sonnet-5",
+          generated_at: "2026-07-27T00:00:00Z",
+          review_status: "published",
+          reviewed_at: "2026-07-27T00:00:00Z"
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      )
+    );
+
+    const result = await dashboardApi.getSpeciesProfile(
+      "전복",
+      new AbortController().signal
+    );
+
+    expect(result).toEqual({
+      species: "전복",
+      season: "가을~겨울",
+      mainOrigins: ["완도", "제주"],
+      features: "맛이 좋다",
+      handlingNotes: "손질 후 냉장 보관",
+      imageUrl: "https://example.com/image.jpg",
+      sourceUrls: ["https://example.com/source"],
+      generatedBy: "claude-sonnet-5",
+      generatedAt: "2026-07-27T00:00:00Z",
+      reviewedAt: "2026-07-27T00:00:00Z"
+    });
+  });
+
+  it("발행되지 않은 어종 정보(404)는 오류 대신 null을 반환한다", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ code: "not_found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" }
+      })
+    );
+
+    const result = await dashboardApi.getSpeciesProfile(
+      "전복",
+      new AbortController().signal
+    );
+
+    expect(result).toBeNull();
+  });
 });

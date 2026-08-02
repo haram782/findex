@@ -2,6 +2,7 @@ import type {
   CatalogItem,
   GroupBy,
   PriceSelection,
+  SpeciesProfile,
   SpeciesSnapshot,
   TimeSeriesPoint
 } from "../types";
@@ -65,6 +66,23 @@ const normalizeSnapshot = (item: ApiObject): SpeciesSnapshot => {
   };
 };
 
+const normalizeSpeciesProfile = (item: ApiObject): SpeciesProfile => ({
+  species: String(item.species ?? ""),
+  season: String(item.season ?? ""),
+  mainOrigins: Array.isArray(item.main_origins)
+    ? item.main_origins.map(String)
+    : [],
+  features: String(item.features ?? ""),
+  handlingNotes: String(item.handling_notes ?? ""),
+  imageUrl: String(item.image_url ?? ""),
+  sourceUrls: Array.isArray(item.source_urls)
+    ? item.source_urls.map(String)
+    : [],
+  generatedBy: String(item.generated_by ?? ""),
+  generatedAt: item.generated_at ? String(item.generated_at) : null,
+  reviewedAt: item.reviewed_at ? String(item.reviewed_at) : null
+});
+
 const normalizePoint = (item: ApiObject): TimeSeriesPoint => ({
   date: String(item.date ?? ""),
   species: String(item.species ?? ""),
@@ -113,5 +131,23 @@ export const dashboardApi = {
       signal
     );
     return body.results.map(normalizePoint);
+  },
+
+  async getSpeciesProfile(
+    species: string,
+    signal: AbortSignal
+  ): Promise<SpeciesProfile | null> {
+    const response = await fetch(
+      `${API_BASE_URL}/species-profile/${encodeURIComponent(species)}/`,
+      { signal }
+    );
+    if (response.status === 404) {
+      return null;
+    }
+    if (!response.ok) {
+      throw new Error("어종 정보를 불러오지 못했습니다");
+    }
+    const body = (await response.json()) as ApiObject;
+    return normalizeSpeciesProfile(body);
   }
 };

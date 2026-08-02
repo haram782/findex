@@ -2,9 +2,11 @@ import { useMemo, useState } from "react";
 import { aggregateTimeSeries } from "./chartInterval";
 import { MarketCharts } from "./components/MarketCharts";
 import { MarketOverview } from "./components/MarketOverview";
+import { SpeciesProfilePanel } from "./components/SpeciesProfilePanel";
 import { SpeciesSidebar } from "./components/SpeciesSidebar";
 import { useDashboard } from "./hooks/useDashboard";
 import { useFavorites, useTheme } from "./hooks/usePreferences";
+import { useSpeciesProfile } from "./hooks/useSpeciesProfile";
 import { getSpeciesAliases } from "./speciesKnowledge";
 import type {
   ChartInterval,
@@ -64,13 +66,17 @@ export default function App() {
       })),
     [selectedItems]
   );
+  const primarySpecies =
+    selectedItems.length === 1 ? selectedItems[0].species : undefined;
   const primaryAliases = useMemo(
-    () =>
-      selectedItems.length === 1
-        ? getSpeciesAliases(selectedItems[0].species)
-        : [],
-    [selectedItems]
+    () => (primarySpecies ? getSpeciesAliases(primarySpecies) : []),
+    [primarySpecies]
   );
+  const {
+    profile: primaryProfile,
+    loading: profileLoading,
+    error: profileError
+  } = useSpeciesProfile(primarySpecies);
 
   const changeSelection = (key: string, selected: boolean) => {
     setSelectedKeys((current) => {
@@ -190,26 +196,13 @@ export default function App() {
             </div>
           )}
           {activeTab === "profile" && (
-            <section className="content-placeholder" role="tabpanel">
-              <span className="phase-badge">PHASE 2</span>
-              <h3>LLM Wiki</h3>
-              <p>
-                제철, 주요 산지, 특징과 손질·보관 정보를 출처와 함께 기록할
-                예정입니다.
-              </p>
-              <div className="placeholder-card">
-                <strong>{selectedItems[0]?.species ?? "선택 어종"} 정보</strong>
-                <span>검수된 어종 정보가 아직 없습니다.</span>
-                <div className="wiki-aliases">
-                  <small>다른 이름</small>
-                  <b>
-                    {primaryAliases.length > 0
-                      ? primaryAliases.join(", ")
-                      : "등록된 다른 이름 없음"}
-                  </b>
-                </div>
-              </div>
-            </section>
+            <SpeciesProfilePanel
+              species={primarySpecies}
+              aliases={primaryAliases}
+              profile={primaryProfile}
+              loading={profileLoading}
+              error={profileError}
+            />
           )}
           {activeTab === "news" && (
             <section className="content-placeholder" role="tabpanel">

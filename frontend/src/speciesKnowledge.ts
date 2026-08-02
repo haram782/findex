@@ -1,7 +1,11 @@
 import type { SpeciesSnapshot } from "./types";
 
 export const SPECIES_ALIASES: Readonly<Record<string, readonly string[]>> = {
-  흑점줄전갱이: ["시마아지", "shima aji"]
+  흑점줄전갱이: ["시마아지", "shima aji"],
+  금태: ["눈볼대", "아까무스", "노도구로", "눈퉁이", "빨간고기", "붉은고기"],
+  양태: ["장대"],
+  참돔: ["도미"],
+  문어: ["참문어", "돌문어"]
 };
 
 const normalizeSearchText = (value: string): string =>
